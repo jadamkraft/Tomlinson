@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osis xmlns="http://www.bibletechnologies.net/2003/OSIS/namespace" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.bibletechnologies.net/2003/OSIS/namespace http://www.bibletechnologies.net/osisCore.2.1.1.xsd">
+  <osisText xml:lang="grc" osisIDWork="BibleWorksClone" osisRefWork="Bible">
+    <div type="book" osisID="John">
+      <chapter osisID="John.1">
+        <verse osisID="John.1.1">
+          <w lemma="1722" morph="PREP" id="n1">Ἐν</w>
+          <w lemma="746" morph="N-DSF" id="n2">ἀρχῇ</w>
+          <w lemma="1510" morph="V-IAI-3S" id="n3">ἦν</w>
+          <w lemma="3588" morph="T-NSM" id="n4">ὁ</w>
+          <w lemma="3056" morph="N-NSM" id="n5">λόγος</w>
+          <w lemma="2532" morph="CONJ" id="n6">καὶ</w>
+          <w lemma="3588" morph="T-NSM" id="n7">ὁ</w>
+          <w lemma="3056" morph="N-NSM" id="n8">λόγος</w>
+          <w lemma="1510" morph="V-IAI-3S" id="n9">ἦν</w>
+          <w lemma="4314" morph="PREP" id="n10">πρὸς</w>
+          <w lemma="3588" morph="T-ASM" id="n11">τὸν</w>
+          <w lemma="2316" morph="N-ASM" id="n12">θεόν</w>
+          <w lemma="2532" morph="CONJ" id="n13">καὶ</w>
+          <w lemma="2316" morph="N-NSM" id="n14">θεὸς</w>
+          <w lemma="1510" morph="V-IAI-3S" id="n15">ἦν</w>
+          <w lemma="3588" morph="T-NSM" id="n16">ὁ</w>
+          <w lemma="3056" morph="N-NSM" id="n17">λόγος</w>
+        </verse>
+        <verse osisID="John.1.2">
+          <w lemma="3778" morph="D-NSM" id="n18">οὗτος</w>
+          <w lemma="1510" morph="V-IAI-3S" id="n19">ἦν</w>
+          <w lemma="1722" morph="PREP" id="n20">ἐν</w>
+          <w lemma="746" morph="N-DSF" id="n21">ἀρχῇ</w>
+          <w lemma="4314" morph="PREP" id="n22">πρὸς</w>
+          <w lemma="3588" morph="T-ASM" id="n23">τὸν</w>
+          <w lemma="2316" morph="N-ASM" id="n24">θεόν</w>
+        </verse>
+        <verse osisID="John.1.3">
+          <w lemma="3956" morph="A-NPN" id="n25">πάντα</w>
+          <w lemma="1223" morph="PREP" id="n26">δι’</w>
+          <w lemma="846" morph="P-GSM" id="n27">αὐτοῦ</w>
+          <w lemma="1096" morph="V-ADI-3S" id="n28">ἐγένετο</w>
+          <w lemma="2532" morph="CONJ" id="n29">καὶ</w>
+          <w lemma="5565" morph="ADV" id="n30">χωρὶς</w>
+          <w lemma="846" morph="P-GSM" id="n31">αὐτοῦ</w>
+          <w lemma="1096" morph="V-ADI-3S" id="n32">ἐγένετο</w>
+          <w lemma="3761" morph="ADV" id="n33">οὐδὲ</w>
+          <w lemma="1520" morph="A-NSN" id="n34">ἕν</w>
+          <w lemma="3739" morph="R-NSN" id="n35">ὃ</w>
+          <w lemma="1096" morph="V-RAI-3S" id="n36">γέγονεν</w>
+        </verse>
+        <verse osisID="John.1.4">
+          <w lemma="1722" morph="PREP" id="n37">ἐν</w>
+          <w lemma="846" morph="P-DSM" id="n38">αὐτῷ</w>
+          <w lemma="2222" morph="N-NSF" id="n39">ζωὴ</w>
+          <w lemma="1510" morph="V-IAI-3S" id="n40">ἦν</w>
+          <w lemma="2532" morph="CONJ" id="n41">καὶ</w>
+          <w lemma="3588" morph="T-NSF" id="n42">ἡ</w>
+          <w lemma="2222" morph="N-NSF" id="n43">ζωὴ</w>
+          <w lemma="1510" morph="V-IAI-3S" id="n44">ἦν</w>
+          <w lemma="3588" morph="T-NSN" id="n45">τὸ</w>
+          <w lemma="5457" morph="N-NSN" id="n46">φῶς</w>
+          <w lemma="3588" morph="T-GPM" id="n47">τῶν</w>
+          <w lemma="444" morph="N-GPM" id="n48">ἀνθρώπων</w>
+        </verse>
+        <verse osisID="John.1.5">
+          <w lemma="2532" morph="CONJ" id="n49">καὶ</w>
+          <w lemma="3588" morph="T-NSN" id="n50">τὸ</w>
+          <w lemma="5457" morph="N-NSN" id="n51">φῶς</w>
+          <w lemma="1722" morph="PREP" id="n52">ἐν</w>
+          <w lemma="3588" morph="T-DSF" id="n53">τῇ</w>
+          <w lemma="4653" morph="N-DSF" id="n54">σκοτίᾳ</w>
+          <w lemma="5316" morph="V-PAI-3S" id="n55">φαίνει</w>
+          <w lemma="2532" morph="CONJ" id="n56">καὶ</w>
+          <w lemma="3588" morph="T-NSF" id="n57">ἡ</w>
+          <w lemma="4653" morph="N-NSF" id="n58">σκοτία</w>
+          <w lemma="846" morph="P-ASN" id="n59">αὐτὸ</w>
+          <w lemma="3756" morph="PRT-N" id="n60">οὐ</w>
+          <w lemma="2638" morph="V-AAI-3S" id="n61">κατέλαβεν</w>
+        </verse>
+      </chapter>
+    </div>
+  </osisText>
+</osis>
