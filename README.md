@@ -1,20 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Tomlinson 10 (BibleWorks Clone)
 
-# Run and deploy your AI Studio app
+**The Mission:** Inspired by the classic BibleWorks 10 software, built for the modern web. This project is named in honor of Professor Alan Tomlinson, retired from Midwestern Baptist Theological Seminary.
 
-This contains everything you need to run your app locally.
+## 🛠 Tech Stack
+* **Core:** React, TypeScript
+* **Styling:** Tailwind CSS
+* **Build Tool:** Vite
+* **Deployment:** Cloudflare Pages (CI/CD via GitHub)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1zqbgRZJRKOcM0ReyYC0HiUH7xzh11fb7
+## 🚀 Methodology
+This project demonstrates a modern, AI-assisted engineering workflow:
+* **Rapid Prototyping:** leveraged Google AI Studio to accelerate UI boilerplate and component logic.
+* **Architecture:** Manually architected the Service Layer (`DictionaryService`, `BibleEngine`) to ensure separation of concerns.
+* **Infrastructure:** Implemented a continuous deployment pipeline using Cloudflare Pages.
 
-## Run Locally
+## 📦 Data Sources
+* **Text:** Hebrew/Greek XML data derived from OpenScriptures.
+* **Lexicon:** Strong's Dictionary (Public Domain).
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 💻 How to Run Locally
+1.  Clone the repo:
+    ```bash
+    git clone [https://github.com/jadamkraft/Tomlinson.git](https://github.com/jadamkraft/Tomlinson.git)
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
