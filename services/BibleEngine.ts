@@ -1,5 +1,5 @@
-import { ParsedVerse, VerseWord } from '../types';
-import { BIBLE_SAMPLE_XML, SHORT_TO_OSIS } from '../constants';
+import { ParsedVerse, VerseWord } from "../types";
+import { BIBLE_SAMPLE_XML, SHORT_TO_OSIS } from "../constants";
 
 export class BibleEngine {
   private parser: DOMParser;
@@ -11,10 +11,45 @@ export class BibleEngine {
 
   private isOT(bookId: string): boolean {
     const OT_BOOKS = [
-      'Gen', 'Exod', 'Lev', 'Num', 'Deut', 'Josh', 'Judg', 'Ruth', '1Sam', '2Sam', 
-      '1Kgs', '2Kgs', '1Chr', '2Chr', 'Ezra', 'Neh', 'Esth', 'Job', 'Ps', 'Prov', 
-      'Eccl', 'Song', 'Isa', 'Jer', 'Lam', 'Ezek', 'Dan', 'Hos', 'Joel', 'Amos', 
-      'Obad', 'Jonah', 'Mic', 'Nah', 'Hab', 'Zeph', 'Hag', 'Zech', 'Mal'
+      "Gen",
+      "Exod",
+      "Lev",
+      "Num",
+      "Deut",
+      "Josh",
+      "Judg",
+      "Ruth",
+      "1Sam",
+      "2Sam",
+      "1Kgs",
+      "2Kgs",
+      "1Chr",
+      "2Chr",
+      "Ezra",
+      "Neh",
+      "Esth",
+      "Job",
+      "Ps",
+      "Prov",
+      "Eccl",
+      "Song",
+      "Isa",
+      "Jer",
+      "Lam",
+      "Ezek",
+      "Dan",
+      "Hos",
+      "Joel",
+      "Amos",
+      "Obad",
+      "Jonah",
+      "Mic",
+      "Nah",
+      "Hab",
+      "Zeph",
+      "Hag",
+      "Zech",
+      "Mal",
     ];
     return OT_BOOKS.includes(bookId);
   }
@@ -24,25 +59,65 @@ export class BibleEngine {
    */
   async initialize(xmlString: string = BIBLE_SAMPLE_XML): Promise<void> {
     try {
+      console.log("BibleEngine: initialize() called");
+      console.log("BibleEngine: XML string length:", xmlString?.length || 0);
+      console.log(
+        "BibleEngine: XML string preview (first 200 chars):",
+        xmlString?.substring(0, 200)
+      );
+
       const doc = this.parser.parseFromString(xmlString, "text/xml");
-      const parserError = doc.querySelector('parsererror');
+      console.log("BibleEngine: Parser returned document:", doc);
+      console.log("BibleEngine: Document type:", doc?.constructor?.name);
+      console.log("BibleEngine: Document element:", doc?.documentElement);
+      console.log(
+        "BibleEngine: Document element tagName:",
+        doc?.documentElement?.tagName
+      );
+
+      const parserError = doc.querySelector("parsererror");
       if (parserError) {
+        console.error(
+          "BibleEngine: Parser error found:",
+          parserError.textContent
+        );
         throw new Error(parserError.textContent || "XML parsing error");
       }
-      
+
       // Cache initial sample books
       const books = doc.querySelectorAll('div[type="book"]');
-      books.forEach(bookNode => {
-        const bookId = bookNode.getAttribute('osisID');
+      console.log("BibleEngine: Found", books.length, "book nodes");
+
+      books.forEach((bookNode, index) => {
+        const bookId = bookNode.getAttribute("osisID");
+        console.log(
+          `BibleEngine: Processing book ${index + 1}, osisID:`,
+          bookId
+        );
         if (bookId) {
           // Create a standalone document for this book
-          const bookDoc = document.implementation.createDocument(null, 'osis', null);
-          bookDoc.documentElement.appendChild(bookDoc.importNode(bookNode, true));
+          const bookDoc = document.implementation.createDocument(
+            null,
+            "osis",
+            null
+          );
+          bookDoc.documentElement.appendChild(
+            bookDoc.importNode(bookNode, true)
+          );
           this.bookDocs.set(bookId, bookDoc);
+          console.log(
+            `BibleEngine: Cached book ${bookId}, bookDocs size:`,
+            this.bookDocs.size
+          );
+        } else {
+          console.warn("BibleEngine: Book node missing osisID attribute");
         }
       });
 
-      console.log("BibleEngine: Initialized with sample data.");
+      console.log(
+        "BibleEngine: Initialized with sample data. Total books cached:",
+        this.bookDocs.size
+      );
     } catch (error) {
       console.error("BibleEngine: Initialization failed:", error);
       throw error;
@@ -53,31 +128,115 @@ export class BibleEngine {
    * Loads a specific book XML from the assets folder.
    */
   public async loadBook(osisBookId: string): Promise<void> {
-    if (this.bookDocs.has(osisBookId)) return;
+    console.log("BibleEngine: loadBook() called with osisBookId:", osisBookId);
+    console.log("BibleEngine: Checking if book already cached...");
+    if (this.bookDocs.has(osisBookId)) {
+      console.log(
+        "BibleEngine: Book",
+        osisBookId,
+        "already cached, returning early"
+      );
+      return;
+    }
 
     // Map OSIS ID to filename (e.g., Gen -> Genesis.xml, John -> John.xml)
     let fileName = `${osisBookId}.xml`;
-    if (osisBookId === 'Gen') fileName = 'Genesis.xml';
-    if (osisBookId === 'John') fileName = 'John.xml';
+    if (osisBookId === "Gen") fileName = "Gen.xml";
+    if (osisBookId === "John") fileName = "John.xml";
 
     const path = `/assets/${fileName}`;
-    
+    console.log("BibleEngine: Fetching from path:", path);
+
     try {
       const response = await fetch(path);
+      console.log(
+        "BibleEngine: Fetch response status:",
+        response.status,
+        response.statusText
+      );
+      console.log("BibleEngine: Fetch response ok:", response.ok);
+      console.log(
+        "BibleEngine: Fetch response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
       if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
-      
+
       const xmlString = await response.text();
+      console.log(
+        "BibleEngine: Raw response text length:",
+        xmlString?.length || 0
+      );
+      console.log(
+        "BibleEngine: Raw response text preview (first 500 chars):",
+        xmlString?.substring(0, 500)
+      );
+      console.log(
+        "BibleEngine: Raw response text is empty?",
+        !xmlString || xmlString.length === 0
+      );
+
       const doc = this.parser.parseFromString(xmlString, "text/xml");
-      
+      console.log("BibleEngine: Parser returned document:", doc);
+      console.log(
+        "BibleEngine: Document is null/undefined?",
+        doc === null || doc === undefined
+      );
+      console.log("BibleEngine: Document element:", doc?.documentElement);
+      console.log(
+        "BibleEngine: Document element tagName:",
+        doc?.documentElement?.tagName
+      );
+
+      // Check for parser errors
+      const parserError = doc.querySelector("parsererror");
+      if (parserError) {
+        console.error(
+          "BibleEngine: XML parser error:",
+          parserError.textContent
+        );
+        throw new Error(`XML parsing error: ${parserError.textContent}`);
+      }
+
       const bookNode = doc.querySelector(`div[osisID="${osisBookId}"]`);
+      console.log("BibleEngine: Looking for div[osisID='" + osisBookId + "']");
+      console.log("BibleEngine: bookNode found:", bookNode !== null);
+      console.log("BibleEngine: bookNode:", bookNode);
+
       if (bookNode) {
-        const bookDoc = document.implementation.createDocument(null, 'osis', null);
+        const bookDoc = document.implementation.createDocument(
+          null,
+          "osis",
+          null
+        );
         bookDoc.documentElement.appendChild(bookDoc.importNode(bookNode, true));
         this.bookDocs.set(osisBookId, bookDoc);
-        console.log(`BibleEngine: Loaded full book ${osisBookId} from assets.`);
+        console.log(
+          `BibleEngine: Loaded full book ${osisBookId} from assets. bookDocs size:`,
+          this.bookDocs.size
+        );
+      } else {
+        console.warn(
+          "BibleEngine: Book node not found in parsed document for",
+          osisBookId
+        );
+        console.log(
+          "BibleEngine: Available div elements:",
+          doc.querySelectorAll("div").length
+        );
+        console.log(
+          "BibleEngine: All div[type='book'] elements:",
+          Array.from(doc.querySelectorAll('div[type="book"]')).map((d) =>
+            d.getAttribute("osisID")
+          )
+        );
       }
     } catch (e) {
-      console.warn(`BibleEngine: Failed to load book ${osisBookId} from ${path}. Using sample if available.`);
+      console.error(
+        `BibleEngine: Failed to load book ${osisBookId} from ${path}:`,
+        e
+      );
+      console.warn(`BibleEngine: Using sample if available.`);
     }
   }
 
@@ -87,15 +246,17 @@ export class BibleEngine {
   public parseReference(query: string): string {
     const regex = /^([a-zA-Z0-9\s]+)\s+(\d+):(\d+)$/;
     const match = query.trim().match(regex);
-    
+
     if (!match) return query;
 
     let bookInput = match[1].trim().toLowerCase();
     const chapter = match[2];
     const verse = match[3];
 
-    const osisBook = SHORT_TO_OSIS[bookInput] || (bookInput.charAt(0).toUpperCase() + bookInput.slice(1));
-    
+    const osisBook =
+      SHORT_TO_OSIS[bookInput] ||
+      bookInput.charAt(0).toUpperCase() + bookInput.slice(1);
+
     return `${osisBook}.${chapter}.${verse}`;
   }
 
@@ -103,40 +264,89 @@ export class BibleEngine {
    * Retrieves a verse from the cached book documents.
    */
   public getVerse(osisID: string): ParsedVerse | null {
-    const bookId = osisID.split('.')[0];
+    console.log("BibleEngine: getVerse() called with osisID:", osisID);
+    const bookId = osisID.split(".")[0];
+    console.log("BibleEngine: Extracted bookId:", bookId);
+    console.log(
+      "BibleEngine: Current bookDocs keys:",
+      Array.from(this.bookDocs.keys())
+    );
+
     const doc = this.bookDocs.get(bookId);
-    
-    if (!doc) return null;
+    console.log(
+      "BibleEngine: Document found for bookId:",
+      doc !== null && doc !== undefined
+    );
+    console.log("BibleEngine: Document:", doc);
+
+    if (!doc) {
+      console.warn("BibleEngine: No document found for bookId:", bookId);
+      return null;
+    }
 
     const verseNode = doc.querySelector(`verse[osisID="${osisID}"]`);
-    if (!verseNode) return null;
+    console.log("BibleEngine: Looking for verse[osisID='" + osisID + "']");
+    console.log("BibleEngine: verseNode found:", verseNode !== null);
+    console.log("BibleEngine: verseNode:", verseNode);
+
+    if (!verseNode) {
+      console.warn("BibleEngine: Verse node not found for osisID:", osisID);
+      console.log(
+        "BibleEngine: Available verse elements in doc:",
+        doc.querySelectorAll("verse").length
+      );
+      return null;
+    }
 
     const words: VerseWord[] = [];
-    const wordNodes = verseNode.querySelectorAll('w');
-    const prefix = this.isOT(bookId) ? 'H' : 'G';
+    const wordNodes = verseNode.querySelectorAll("w");
+    console.log("BibleEngine: Found", wordNodes.length, "word nodes in verse");
+    const prefix = this.isOT(bookId) ? "H" : "G";
+    console.log("BibleEngine: Using prefix:", prefix, "for bookId:", bookId);
 
-    wordNodes.forEach((w) => {
-      const lemmaValue = w.getAttribute('lemma') || "";
+    wordNodes.forEach((w, index) => {
+      const lemmaValue = w.getAttribute("lemma") || "";
       // Strip common OSIS prefixes like 'strong:' if they exist, then prepend our internal H/G
-      const rawStrongs = (w.getAttribute('strongs') || lemmaValue).replace(/^strong:/, '');
-      
-      words.push({
+      const rawStrongs = (w.getAttribute("strongs") || lemmaValue).replace(
+        /^strong:/,
+        ""
+      );
+
+      const word = {
         text: w.textContent?.trim() || "",
         lemma: lemmaValue,
-        morph: w.getAttribute('morph') || "",
+        morph: w.getAttribute("morph") || "",
         strongs: `${prefix}${rawStrongs}`,
-        id: w.getAttribute('id') || `w-${Math.random().toString(36).substr(2, 9)}`
-      });
+        id:
+          w.getAttribute("id") ||
+          `w-${Math.random().toString(36).substr(2, 9)}`,
+      };
+
+      if (index < 3) {
+        console.log(`BibleEngine: Word ${index}:`, word);
+      }
+
+      words.push(word);
     });
 
-    const parts = osisID.split('.');
-    return {
+    const parts = osisID.split(".");
+    const parsedVerse = {
       osisID,
       words,
       book: parts[0],
       chapter: parseInt(parts[1]),
-      verse: parseInt(parts[2])
+      verse: parseInt(parts[2]),
     };
+
+    console.log("BibleEngine: Returning parsed verse:", {
+      osisID: parsedVerse.osisID,
+      book: parsedVerse.book,
+      chapter: parsedVerse.chapter,
+      verse: parsedVerse.verse,
+      wordCount: parsedVerse.words.length,
+    });
+
+    return parsedVerse;
   }
 }
 
