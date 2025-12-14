@@ -219,10 +219,37 @@ export class BibleEngine {
         throw new Error(`XML parsing error: ${parserError.textContent}`);
       }
 
-      const bookNode = doc.querySelector(`div[osisID="${osisBookId}"]`);
-      console.log("BibleEngine: Looking for div[osisID='" + osisBookId + "']");
+      // Log the XML structure to help debug
+      console.log(
+        "BibleEngine: XML structure preview:",
+        doc.documentElement.innerHTML.slice(0, 500)
+      );
+
+      // Try the more flexible selector first (without div constraint)
+      let bookNode = doc.querySelector(`[osisID="${osisBookId}"]`);
+      console.log("BibleEngine: Looking for [osisID='" + osisBookId + "']");
       console.log("BibleEngine: bookNode found:", bookNode !== null);
       console.log("BibleEngine: bookNode:", bookNode);
+
+      // Fallback: search for any element with that osisID attribute
+      if (!bookNode) {
+        console.log(
+          "BibleEngine: Primary selector failed, trying fallback search..."
+        );
+        const allElements = doc.querySelectorAll("*");
+        for (let i = 0; i < allElements.length; i++) {
+          const element = allElements[i];
+          if (element.getAttribute("osisID") === osisBookId) {
+            bookNode = element;
+            console.log(
+              "BibleEngine: Found book node via fallback search:",
+              element.tagName,
+              element
+            );
+            break;
+          }
+        }
+      }
 
       if (bookNode) {
         const bookDoc = document.implementation.createDocument(
