@@ -331,6 +331,7 @@ export class BibleEngine {
 
   /**
    * Retrieves a verse from the cached book documents.
+   * Handles flat XML structure where <verse-number> is a sibling of words.
    */
   public getVerse(osisID: string): ParsedVerse | null {
     console.log("BibleEngine: getVerse() called with osisID:", osisID);
@@ -353,90 +354,139 @@ export class BibleEngine {
       return null;
     }
 
-    // Try the more flexible selector first (without verse tag constraint)
-    let verseNode = doc.querySelector(`[osisID="${osisID}"]`);
-    let foundVia = "selector";
-    console.log("BibleEngine: Looking for [osisID='" + osisID + "']");
+    // Convert OSIS format (e.g., "Mark.1.1") to space-separated format (e.g., "Mark 1:1")
+    const parts = osisID.split(".");
+    const spaceSeparatedId = `${parts[0]} ${parts[1]}:${parts[2]}`;
     console.log(
-      "BibleEngine: verseNode found via selector:",
-      verseNode !== null
+      "BibleEngine: Converted osisID to space-separated format:",
+      spaceSeparatedId
     );
-    console.log("BibleEngine: verseNode:", verseNode);
 
-    // Fallback: search for any element with that osisID attribute
-    if (!verseNode) {
-      console.log(
-        "BibleEngine: Primary selector failed, trying fallback search..."
+    // Find the <verse-number> element using the space-separated ID
+    let verseNumberNode: Element | null = null;
+
+    // Try finding by id attribute first
+    verseNumberNode = doc.querySelector(
+      `verse-number[id="${spaceSeparatedId}"]`
+    );
+    if (!verseNumberNode) {
+      // Try osisID attribute
+      verseNumberNode = doc.querySelector(
+        `verse-number[osisID="${spaceSeparatedId}"]`
       );
-      const allElements = doc.querySelectorAll("*");
-      for (let i = 0; i < allElements.length; i++) {
-        const element = allElements[i];
-        if (element.getAttribute("osisID") === osisID) {
-          verseNode = element;
-          foundVia = "fallback";
+    }
+    if (!verseNumberNode) {
+      // Try generic selector
+      verseNumberNode = doc.querySelector(`verse-number[id="${osisID}"]`);
+    }
+    if (!verseNumberNode) {
+      // Fallback: search all verse-number elements
+      const allVerseNumbers = doc.querySelectorAll("verse-number");
+      console.log(
+        "BibleEngine: Found",
+        allVerseNumbers.length,
+        "verse-number elements, searching manually..."
+      );
+      for (let i = 0; i < allVerseNumbers.length; i++) {
+        const element = allVerseNumbers[i];
+        const elementId = element.getAttribute("id");
+        const elementOsisId = element.getAttribute("osisID");
+        if (
+          elementId === spaceSeparatedId ||
+          elementOsisId === spaceSeparatedId ||
+          elementId === osisID ||
+          elementOsisId === osisID
+        ) {
+          verseNumberNode = element;
           console.log(
-            "BibleEngine: Found verse node via fallback search:",
-            element.tagName,
-            element
+            "BibleEngine: Found verse-number via manual search:",
+            elementId,
+            elementOsisId
           );
           break;
         }
       }
     }
 
-    if (!verseNode) {
+    if (!verseNumberNode) {
       console.error(
-        "❌ BibleEngine: Verse node not found for osisID:",
+        "❌ BibleEngine: Verse-number node not found for osisID:",
         osisID,
-        "- Both selector and fallback failed!"
+        "or space-separated ID:",
+        spaceSeparatedId
       );
       console.log(
-        "BibleEngine: Available elements with osisID attribute:",
-        Array.from(doc.querySelectorAll("[osisID]")).map((el) => ({
-          tag: el.tagName,
-          osisID: el.getAttribute("osisID"),
-        }))
+        "BibleEngine: Available verse-number elements:",
+        Array.from(doc.querySelectorAll("verse-number"))
+          .slice(0, 5)
+          .map((el) => ({
+            tag: el.tagName,
+            id: el.getAttribute("id"),
+            osisID: el.getAttribute("osisID"),
+          }))
       );
       return null;
     }
 
+    console.log(`✅ BibleEngine: Verse-number node found for osisID:`, osisID);
+
+    // Collect <w> elements from siblings after the verse-number element
+    const words: VerseWord[] = [];
+    let currentNode: Element | null = verseNumberNode.nextElementSibling;
+
     console.log(
-      `✅ BibleEngine: Verse node found via ${foundVia} for osisID:`,
-      osisID
+      "BibleEngine: Starting to collect word siblings from verse-number..."
     );
 
-    const words: VerseWord[] = [];
-    const wordNodes = verseNode.querySelectorAll("w");
-    console.log("BibleEngine: Found", wordNodes.length, "word nodes in verse");
-    const prefix = this.isOT(bookId) ? "H" : "G";
-    console.log("BibleEngine: Using prefix:", prefix, "for bookId:", bookId);
+    while (currentNode !== null) {
+      const tagName = currentNode.tagName.toLowerCase();
 
-    wordNodes.forEach((w, index) => {
-      const lemmaValue = w.getAttribute("lemma") || "";
-      // Strip common OSIS prefixes like 'strong:' if they exist, then prepend our internal H/G
-      const rawStrongs = (w.getAttribute("strongs") || lemmaValue).replace(
-        /^strong:/,
-        ""
-      );
-
-      const word = {
-        text: w.textContent?.trim() || "",
-        lemma: lemmaValue,
-        morph: w.getAttribute("morph") || "",
-        strongs: `${prefix}${rawStrongs}`,
-        id:
-          w.getAttribute("id") ||
-          `w-${Math.random().toString(36).substr(2, 9)}`,
-      };
-
-      if (index < 3) {
-        console.log(`BibleEngine: Word ${index}:`, word);
+      // Stop if we hit the next verse-number, chapter, or end
+      if (tagName === "verse-number" || tagName === "chapter") {
+        console.log(
+          "BibleEngine: Stopping at",
+          tagName,
+          "tag. Collected",
+          words.length,
+          "words"
+        );
+        break;
       }
 
-      words.push(word);
-    });
+      // Collect <w> elements
+      if (tagName === "w") {
+        const lemmaValue = currentNode.getAttribute("lemma") || "";
+        // Strip common OSIS prefixes like 'strong:' if they exist, then prepend our internal H/G
+        const rawStrongs = (
+          currentNode.getAttribute("strongs") || lemmaValue
+        ).replace(/^strong:/, "");
 
-    const parts = osisID.split(".");
+        const word = {
+          text: currentNode.textContent?.trim() || "",
+          lemma: lemmaValue,
+          morph: currentNode.getAttribute("morph") || "",
+          strongs: `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`,
+          id:
+            currentNode.getAttribute("id") ||
+            `w-${Math.random().toString(36).substr(2, 9)}`,
+        };
+
+        if (words.length < 3) {
+          console.log(`BibleEngine: Word ${words.length}:`, word);
+        }
+
+        words.push(word);
+      }
+
+      currentNode = currentNode.nextElementSibling;
+    }
+
+    console.log(
+      "BibleEngine: Collected",
+      words.length,
+      "word nodes from siblings"
+    );
+
     const parsedVerse = {
       osisID,
       words,
