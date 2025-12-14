@@ -134,8 +134,8 @@ export class DictionaryService {
         );
 
         entryNodes.forEach((node, index) => {
-          // Check for 'strongs' attribute if 'id' is missing
-          const id = node.getAttribute("id") || node.getAttribute("strongs");
+          // Prioritize 'strongs' attribute over 'id'
+          const id = node.getAttribute("strongs") || node.getAttribute("id");
           const word = node.querySelector("w")?.textContent || "";
           const def = node.querySelector("def")?.textContent || "";
 
@@ -160,10 +160,13 @@ export class DictionaryService {
             targetMap.set(id, { word, def });
             entriesAdded++;
           } else {
-            console.warn(
-              "DictionaryService: Entry node missing both id and strongs attributes at index",
-              index
-            );
+            // Only log for first 5 failures to avoid console flooding
+            if (index < 5) {
+              console.warn(
+                "DictionaryService: Entry node missing both id and strongs attributes at index",
+                index
+              );
+            }
           }
         });
       } else if (rootTag === "osis" || rootTag === "osisText") {
@@ -228,11 +231,29 @@ export class DictionaryService {
         }
 
         entryNodes.forEach((node, index) => {
-          // Try multiple attribute sources for ID
+          // Try multiple attribute sources for ID (including 'n')
           const id =
             node.getAttribute("osisID") ||
             node.getAttribute("id") ||
-            node.getAttribute("strongs");
+            node.getAttribute("strongs") ||
+            node.getAttribute("n");
+
+          // Debug: For the very first entry, log all attribute names and values
+          if (index === 0) {
+            const attributeNames = node.getAttributeNames();
+            const attributeMap: Record<string, string> = {};
+            attributeNames.forEach((attrName) => {
+              attributeMap[attrName] = node.getAttribute(attrName) || "";
+            });
+            console.log(
+              "DictionaryService: First Hebrew entry (index 0) - All attributes:",
+              attributeMap
+            );
+            console.log(
+              "DictionaryService: First Hebrew entry (index 0) - Attribute names:",
+              attributeNames
+            );
+          }
 
           // Try different selectors for word and definition
           const word =
@@ -264,7 +285,11 @@ export class DictionaryService {
               "osisID:",
               node.getAttribute("osisID"),
               "id:",
-              node.getAttribute("id")
+              node.getAttribute("id"),
+              "strongs:",
+              node.getAttribute("strongs"),
+              "n:",
+              node.getAttribute("n")
             );
           }
 
@@ -272,12 +297,15 @@ export class DictionaryService {
             targetMap.set(id, { word, def });
             entriesAdded++;
           } else {
-            console.warn(
-              "DictionaryService: Hebrew entry node missing id/osisID/strongs attributes at index",
-              index,
-              "tag:",
-              node.tagName
-            );
+            // Only log for first 5 failures to avoid console flooding
+            if (index < 5) {
+              console.warn(
+                "DictionaryService: Hebrew entry node missing id/osisID/strongs/n attributes at index",
+                index,
+                "tag:",
+                node.tagName
+              );
+            }
           }
         });
       } else {
@@ -293,13 +321,22 @@ export class DictionaryService {
           "entry nodes"
         );
         entryNodes.forEach((node, index) => {
-          const id = node.getAttribute("id") || node.getAttribute("strongs");
+          // Prioritize 'strongs' attribute over 'id'
+          const id = node.getAttribute("strongs") || node.getAttribute("id");
           const word = node.querySelector("w")?.textContent || "";
           const def = node.querySelector("def")?.textContent || "";
 
           if (id) {
             targetMap.set(id, { word, def });
             entriesAdded++;
+          } else {
+            // Only log for first 5 failures to avoid console flooding
+            if (index < 5) {
+              console.warn(
+                "DictionaryService: Fallback entry node missing both id and strongs attributes at index",
+                index
+              );
+            }
           }
         });
       }

@@ -225,28 +225,49 @@ export class BibleEngine {
         doc.documentElement.innerHTML.slice(0, 500)
       );
 
-      // Try the more flexible selector first (without div constraint)
-      let bookNode = doc.querySelector(`[osisID="${osisBookId}"]`);
-      console.log("BibleEngine: Looking for [osisID='" + osisBookId + "']");
+      // First, try to find any <book> element (ignore ID matching)
+      let bookNode = doc.querySelector("book");
+      console.log("BibleEngine: Looking for generic <book> element");
       console.log("BibleEngine: bookNode found:", bookNode !== null);
-      console.log("BibleEngine: bookNode:", bookNode);
+      if (bookNode) {
+        console.log(
+          "BibleEngine: Found <book> element (ignoring ID match), tag:",
+          bookNode.tagName,
+          "id:",
+          bookNode.getAttribute("id"),
+          "osisID:",
+          bookNode.getAttribute("osisID")
+        );
+      }
 
-      // Fallback: search for any element with that osisID attribute
+      // Fallback: Only search by ID if no generic <book> element was found
       if (!bookNode) {
         console.log(
-          "BibleEngine: Primary selector failed, trying fallback search..."
+          "BibleEngine: No generic <book> element found, trying ID-based search..."
         );
-        const allElements = doc.querySelectorAll("*");
-        for (let i = 0; i < allElements.length; i++) {
-          const element = allElements[i];
-          if (element.getAttribute("osisID") === osisBookId) {
-            bookNode = element;
-            console.log(
-              "BibleEngine: Found book node via fallback search:",
-              element.tagName,
-              element
-            );
-            break;
+        // Try the more flexible selector (without div constraint)
+        bookNode = doc.querySelector(`[osisID="${osisBookId}"]`);
+        console.log("BibleEngine: Looking for [osisID='" + osisBookId + "']");
+        console.log("BibleEngine: bookNode found:", bookNode !== null);
+        console.log("BibleEngine: bookNode:", bookNode);
+
+        // Additional fallback: search for any element with that osisID attribute
+        if (!bookNode) {
+          console.log(
+            "BibleEngine: Primary ID selector failed, trying fallback search..."
+          );
+          const allElements = doc.querySelectorAll("*");
+          for (let i = 0; i < allElements.length; i++) {
+            const element = allElements[i];
+            if (element.getAttribute("osisID") === osisBookId) {
+              bookNode = element;
+              console.log(
+                "BibleEngine: Found book node via fallback search:",
+                element.tagName,
+                element
+              );
+              break;
+            }
           }
         }
       }
