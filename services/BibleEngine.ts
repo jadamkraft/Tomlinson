@@ -371,8 +371,22 @@ export class BibleEngine {
       );
     }
 
+    const text = w.textContent?.trim() || "";
+
+    // DEBUG: If we failed to find a Strong's ID, dump all available attributes to the console
+    if (!strongsId && text.trim().length > 0) {
+      // Create a simple object of all attributes on this node
+      const allAttributes = w.getAttributeNames().reduce((acc, name) => {
+        acc[name] = w.getAttribute(name);
+        return acc;
+      }, {} as Record<string, string | null>);
+
+      console.warn(`⚠️ MISSING ID for word: "${text}"`);
+      console.warn(`   --> Found attributes:`, allAttributes);
+    }
+
     return {
-      text: w.textContent?.trim() || "",
+      text: text,
       lemma: lemmaValue,
       morph: morphValue,
       strongs: strongsId,
