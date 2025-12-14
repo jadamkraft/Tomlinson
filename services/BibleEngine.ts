@@ -1,6 +1,131 @@
 import { ParsedVerse, VerseWord } from "../types";
 import { BIBLE_SAMPLE_XML, SHORT_TO_OSIS } from "../constants";
 
+/**
+ * Maps OSIS book IDs to their actual filenames in the assets folder.
+ */
+const BOOK_FILENAME_MAP: Record<string, string> = {
+  // Old Testament
+  Genesis: "Gen.xml",
+  Gen: "Gen.xml",
+  Exodus: "Exod.xml",
+  Exod: "Exod.xml",
+  Leviticus: "Lev.xml",
+  Lev: "Lev.xml",
+  Numbers: "Num.xml",
+  Num: "Num.xml",
+  Deuteronomy: "Deut.xml",
+  Deut: "Deut.xml",
+  Joshua: "Josh.xml",
+  Josh: "Josh.xml",
+  Judges: "Judg.xml",
+  Judg: "Judg.xml",
+  Ruth: "Ruth.xml",
+  "1Samuel": "1Sam.xml",
+  "1Sam": "1Sam.xml",
+  "2Samuel": "2Sam.xml",
+  "2Sam": "2Sam.xml",
+  "1Kings": "1Kgs.xml",
+  "1Kgs": "1Kgs.xml",
+  "2Kings": "2Kgs.xml",
+  "2Kgs": "2Kgs.xml",
+  "1Chronicles": "1Chr.xml",
+  "1Chr": "1Chr.xml",
+  "2Chronicles": "2Chr.xml",
+  "2Chr": "2Chr.xml",
+  Ezra: "Ezra.xml",
+  Nehemiah: "Neh.xml",
+  Neh: "Neh.xml",
+  Esther: "Esth.xml",
+  Esth: "Esth.xml",
+  Job: "Job.xml",
+  Psalms: "Ps.xml",
+  Ps: "Ps.xml",
+  Proverbs: "Prov.xml",
+  Prov: "Prov.xml",
+  Ecclesiastes: "Eccl.xml",
+  Eccl: "Eccl.xml",
+  "Song of Solomon": "Song.xml",
+  Song: "Song.xml",
+  Isaiah: "Isa.xml",
+  Isa: "Isa.xml",
+  Jeremiah: "Jer.xml",
+  Jer: "Jer.xml",
+  Lamentations: "Lam.xml",
+  Lam: "Lam.xml",
+  Ezekiel: "Ezek.xml",
+  Ezek: "Ezek.xml",
+  Daniel: "Dan.xml",
+  Dan: "Dan.xml",
+  Hosea: "Hos.xml",
+  Hos: "Hos.xml",
+  Joel: "Joel.xml",
+  Amos: "Amos.xml",
+  Obadiah: "Obad.xml",
+  Obad: "Obad.xml",
+  Jonah: "Jonah.xml",
+  Micah: "Mic.xml",
+  Mic: "Mic.xml",
+  Nahum: "Nah.xml",
+  Nah: "Nah.xml",
+  Habakkuk: "Hab.xml",
+  Hab: "Hab.xml",
+  Zephaniah: "Zeph.xml",
+  Zeph: "Zeph.xml",
+  Haggai: "Hag.xml",
+  Hag: "Hag.xml",
+  Zechariah: "Zech.xml",
+  Zech: "Zech.xml",
+  Malachi: "Mal.xml",
+  Mal: "Mal.xml",
+  // New Testament
+  Matthew: "Matt.xml",
+  Matt: "Matt.xml",
+  Mark: "Mark.xml",
+  Luke: "Luke.xml",
+  John: "John.xml",
+  Acts: "Acts.xml",
+  Romans: "Rom.xml",
+  Rom: "Rom.xml",
+  "1Corinthians": "1Cor.xml",
+  "1Cor": "1Cor.xml",
+  "2Corinthians": "2Cor.xml",
+  "2Cor": "2Cor.xml",
+  Galatians: "Gal.xml",
+  Gal: "Gal.xml",
+  Ephesians: "Eph.xml",
+  Eph: "Eph.xml",
+  Philippians: "Phil.xml",
+  Phil: "Phil.xml",
+  Colossians: "Col.xml",
+  Col: "Col.xml",
+  "1Thessalonians": "1Thess.xml",
+  "1Thess": "1Thess.xml",
+  "2Thessalonians": "2Thess.xml",
+  "2Thess": "2Thess.xml",
+  "1Timothy": "1Tim.xml",
+  "1Tim": "1Tim.xml",
+  "2Timothy": "2Tim.xml",
+  "2Tim": "2Tim.xml",
+  Titus: "Titus.xml",
+  Philemon: "Phlm.xml",
+  Phlm: "Phlm.xml",
+  Hebrews: "Heb.xml",
+  Heb: "Heb.xml",
+  James: "Jas.xml",
+  Jas: "Jas.xml",
+  "1Peter": "1Pet.xml",
+  "1Pet": "1Pet.xml",
+  "2Peter": "2Pet.xml",
+  "2Pet": "2Pet.xml",
+  "1John": "1John.xml",
+  "2John": "2John.xml",
+  "3John": "3John.xml",
+  Jude: "Jude.xml",
+  Revelation: "Rev.xml",
+  Rev: "Rev.xml",
+};
+
 export class BibleEngine {
   private parser: DOMParser;
   private bookDocs: Map<string, Document> = new Map();
@@ -139,10 +264,14 @@ export class BibleEngine {
       return;
     }
 
-    // Map OSIS ID to filename (e.g., Gen -> Genesis.xml, John -> John.xml)
-    let fileName = `${osisBookId}.xml`;
-    if (osisBookId === "Gen") fileName = "Gen.xml";
-    if (osisBookId === "John") fileName = "John.xml";
+    // Map OSIS ID to filename using the BOOK_FILENAME_MAP
+    const fileName = BOOK_FILENAME_MAP[osisBookId] || `${osisBookId}.xml`;
+    console.log(
+      "BibleEngine: Mapped osisBookId:",
+      osisBookId,
+      "to filename:",
+      fileName
+    );
 
     const path = `/assets/${fileName}`;
     const fullUrl = window.location.origin + path;
@@ -188,6 +317,16 @@ export class BibleEngine {
         "🔍 BibleEngine: Response starts with '<html' (HTML)?",
         xmlString?.toLowerCase().startsWith("<html")
       );
+
+      // Soft 404 check: throw error if response is HTML (likely a 404 page)
+      if (
+        xmlString?.startsWith("<!DOCTYPE") ||
+        xmlString?.toLowerCase().startsWith("<html")
+      ) {
+        throw new Error(
+          `Soft 404: Received HTML response instead of XML for ${path}. The file may not exist.`
+        );
+      }
       console.log(
         "BibleEngine: Raw response text preview (first 500 chars):",
         xmlString?.substring(0, 500)
@@ -330,8 +469,36 @@ export class BibleEngine {
   }
 
   /**
+   * Maps a word element to a VerseWord object.
+   * Common helper for both flat and container formats.
+   */
+  private mapWordElement(w: Element, bookId: string, index: number): VerseWord {
+    const lemmaValue = w.getAttribute("lemma") || "";
+    // Strip common OSIS prefixes like 'strong:' if they exist, then prepend our internal H/G
+    const rawStrongs = (w.getAttribute("strongs") || lemmaValue).replace(
+      /^strong:/,
+      ""
+    );
+
+    const word = {
+      text: w.textContent?.trim() || "",
+      lemma: lemmaValue,
+      morph: w.getAttribute("morph") || "",
+      strongs: `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`,
+      id:
+        w.getAttribute("id") || `w-${Math.random().toString(36).substr(2, 9)}`,
+    };
+
+    if (index < 3) {
+      console.log(`BibleEngine: Word ${index}:`, word);
+    }
+
+    return word;
+  }
+
+  /**
    * Retrieves a verse from the cached book documents.
-   * Handles flat XML structure where <verse-number> is a sibling of words.
+   * Supports both flat XML structure (verse-number siblings) and container format (verse elements).
    */
   public getVerse(osisID: string): ParsedVerse | null {
     console.log("BibleEngine: getVerse() called with osisID:", osisID);
@@ -354,8 +521,15 @@ export class BibleEngine {
       return null;
     }
 
-    // Convert OSIS format (e.g., "Mark.1.1") to space-separated format (e.g., "Mark 1:1")
     const parts = osisID.split(".");
+    let words: VerseWord[] = [];
+
+    // ============================================
+    // Strategy A: Flat/Milestone Format
+    // ============================================
+    console.log("BibleEngine: Trying Strategy A (Flat/Milestone format)...");
+
+    // Convert OSIS format (e.g., "Mark.1.1") to space-separated format (e.g., "Mark 1:1")
     const spaceSeparatedId = `${parts[0]} ${parts[1]}:${parts[2]}`;
     console.log(
       "BibleEngine: Converted osisID to space-separated format:",
@@ -408,85 +582,136 @@ export class BibleEngine {
       }
     }
 
-    if (!verseNumberNode) {
-      console.error(
-        "❌ BibleEngine: Verse-number node not found for osisID:",
-        osisID,
-        "or space-separated ID:",
-        spaceSeparatedId
-      );
+    if (verseNumberNode) {
       console.log(
-        "BibleEngine: Available verse-number elements:",
-        Array.from(doc.querySelectorAll("verse-number"))
-          .slice(0, 5)
-          .map((el) => ({
-            tag: el.tagName,
-            id: el.getAttribute("id"),
-            osisID: el.getAttribute("osisID"),
-          }))
+        `✅ BibleEngine: Verse-number node found (Strategy A) for osisID:`,
+        osisID
       );
-      return null;
-    }
 
-    console.log(`✅ BibleEngine: Verse-number node found for osisID:`, osisID);
+      // Collect <w> elements from siblings after the verse-number element
+      let currentNode: Element | null = verseNumberNode.nextElementSibling;
 
-    // Collect <w> elements from siblings after the verse-number element
-    const words: VerseWord[] = [];
-    let currentNode: Element | null = verseNumberNode.nextElementSibling;
+      console.log(
+        "BibleEngine: Starting to collect word siblings from verse-number..."
+      );
 
-    console.log(
-      "BibleEngine: Starting to collect word siblings from verse-number..."
-    );
+      while (currentNode !== null) {
+        const tagName = currentNode.tagName.toLowerCase();
 
-    while (currentNode !== null) {
-      const tagName = currentNode.tagName.toLowerCase();
-
-      // Stop if we hit the next verse-number, chapter, or end
-      if (tagName === "verse-number" || tagName === "chapter") {
-        console.log(
-          "BibleEngine: Stopping at",
-          tagName,
-          "tag. Collected",
-          words.length,
-          "words"
-        );
-        break;
-      }
-
-      // Collect <w> elements
-      if (tagName === "w") {
-        const lemmaValue = currentNode.getAttribute("lemma") || "";
-        // Strip common OSIS prefixes like 'strong:' if they exist, then prepend our internal H/G
-        const rawStrongs = (
-          currentNode.getAttribute("strongs") || lemmaValue
-        ).replace(/^strong:/, "");
-
-        const word = {
-          text: currentNode.textContent?.trim() || "",
-          lemma: lemmaValue,
-          morph: currentNode.getAttribute("morph") || "",
-          strongs: `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`,
-          id:
-            currentNode.getAttribute("id") ||
-            `w-${Math.random().toString(36).substr(2, 9)}`,
-        };
-
-        if (words.length < 3) {
-          console.log(`BibleEngine: Word ${words.length}:`, word);
+        // Stop if we hit the next verse-number, chapter, or end
+        if (tagName === "verse-number" || tagName === "chapter") {
+          console.log(
+            "BibleEngine: Stopping at",
+            tagName,
+            "tag. Collected",
+            words.length,
+            "words"
+          );
+          break;
         }
 
-        words.push(word);
+        // Collect <w> elements
+        if (tagName === "w") {
+          words.push(this.mapWordElement(currentNode, bookId, words.length));
+        }
+
+        currentNode = currentNode.nextElementSibling;
       }
 
-      currentNode = currentNode.nextElementSibling;
+      console.log(
+        "BibleEngine: Strategy A collected",
+        words.length,
+        "word nodes from siblings"
+      );
+    } else {
+      console.log(
+        "BibleEngine: Strategy A failed - no verse-number found, trying Strategy B..."
+      );
     }
 
-    console.log(
-      "BibleEngine: Collected",
-      words.length,
-      "word nodes from siblings"
-    );
+    // ============================================
+    // Strategy B: Container/Standard Format (FALLBACK)
+    // ============================================
+    if (words.length === 0) {
+      console.log(
+        "BibleEngine: Trying Strategy B (Container/Standard format)..."
+      );
 
+      // Use original OSIS format (dot-separated, e.g., "Gen.1.1")
+      let verseNode: Element | null = null;
+
+      // Try <verse> element with osisID
+      verseNode = doc.querySelector(`verse[osisID="${osisID}"]`);
+      if (!verseNode) {
+        // Try <div type="verse"> with osisID
+        verseNode = doc.querySelector(`div[type="verse"][osisID="${osisID}"]`);
+      }
+      if (!verseNode) {
+        // Try generic selector without tag constraint
+        verseNode = doc.querySelector(`[osisID="${osisID}"]`);
+      }
+      if (!verseNode) {
+        // Fallback: search all elements
+        const allElements = doc.querySelectorAll("*");
+        for (let i = 0; i < allElements.length; i++) {
+          const element = allElements[i];
+          if (element.getAttribute("osisID") === osisID) {
+            verseNode = element;
+            console.log(
+              "BibleEngine: Found verse node via fallback search:",
+              element.tagName,
+              element
+            );
+            break;
+          }
+        }
+      }
+
+      if (verseNode) {
+        console.log(
+          `✅ BibleEngine: Verse container node found (Strategy B) for osisID:`,
+          osisID
+        );
+
+        // Collect <w> elements from children
+        const wordNodes = verseNode.querySelectorAll("w");
+        console.log(
+          "BibleEngine: Found",
+          wordNodes.length,
+          "word nodes in verse container"
+        );
+
+        wordNodes.forEach((w, index) => {
+          words.push(this.mapWordElement(w, bookId, index));
+        });
+
+        console.log(
+          "BibleEngine: Strategy B collected",
+          words.length,
+          "word nodes from container children"
+        );
+      } else {
+        console.error(
+          "❌ BibleEngine: Verse node not found for osisID:",
+          osisID,
+          "- Both Strategy A and Strategy B failed!"
+        );
+        console.log(
+          "BibleEngine: Available elements with osisID attribute:",
+          Array.from(doc.querySelectorAll("[osisID]"))
+            .slice(0, 5)
+            .map((el) => ({
+              tag: el.tagName,
+              osisID: el.getAttribute("osisID"),
+            }))
+        );
+        return null;
+      }
+    }
+
+    // ============================================
+    // Common Output
+    // ============================================
     const parsedVerse = {
       osisID,
       words,
