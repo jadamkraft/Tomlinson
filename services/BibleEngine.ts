@@ -141,7 +141,6 @@ function normalizeBookId(bookId: string): string {
 export class BibleEngine {
   private parser: DOMParser;
   private bookDocs: Map<string, Document> = new Map();
-  private dictionary: Map<string, string> = new Map();
 
   constructor() {
     this.parser = new DOMParser();
@@ -193,155 +192,22 @@ export class BibleEngine {
   }
 
   /**
-   * Parses dictionary XML for Greek or Hebrew entries.
-   * Greek: Parses <entry strongs="0001"> and extracts definition from <strongs_def>.
-   * Hebrew: Parses <w ID="H1"> and extracts definition from <note type="explanation">.
-   */
-  public parseDictionaryXML(xml: string, type: "GREEK" | "HEBREW"): void {
-    console.log(`BibleEngine: parseDictionaryXML() called for type: ${type}`);
-    try {
-      const doc = this.parser.parseFromString(xml, "text/xml");
-
-      // Check for parser errors
-      const parserError = doc.querySelector("parsererror");
-      if (parserError) {
-        console.warn(
-          `BibleEngine: XML parser error in dictionary (${type}):`,
-          parserError.textContent
-        );
-        return;
-      }
-
-      if (type === "GREEK") {
-        // Greek format: <entry strongs="0001">
-        const entries = doc.querySelectorAll("entry[strongs]");
-        console.log(
-          `BibleEngine: Found ${entries.length} Greek dictionary entries`
-        );
-
-        entries.forEach((entry, index) => {
-          const strongsAttr = entry.getAttribute("strongs");
-          if (!strongsAttr) {
-            if (index < 5) {
-              console.warn(
-                `BibleEngine: Greek entry at index ${index} missing strongs attribute`
-              );
-            }
-            return;
-          }
-
-          // Convert "0001" -> "G1" (remove leading zeros, add G prefix)
-          const numericId = parseInt(strongsAttr, 10).toString();
-          const key = `G${numericId}`;
-
-          // Extract definition from <strongs_def>
-          const defElement = entry.querySelector("strongs_def");
-          const definition = defElement?.textContent?.trim() || "";
-
-          if (definition) {
-            this.dictionary.set(key, definition);
-          } else {
-            if (index < 5) {
-              console.warn(
-                `BibleEngine: Greek entry ${key} missing definition`
-              );
-            }
-          }
-        });
-
-        console.log(
-          `BibleEngine: Loaded ${this.dictionary.size} Greek dictionary entries`
-        );
-      } else {
-        // Hebrew format: <w ID="H1">
-        const wordElements = doc.querySelectorAll("w[ID]");
-        console.log(
-          `BibleEngine: Found ${wordElements.length} Hebrew dictionary entries`
-        );
-
-        wordElements.forEach((wordEl, index) => {
-          const idAttr = wordEl.getAttribute("ID");
-          if (!idAttr) {
-            if (index < 5) {
-              console.warn(
-                `BibleEngine: Hebrew entry at index ${index} missing ID attribute`
-              );
-            }
-            return;
-          }
-
-          // ID should already be in format "H1", "H2", etc.
-          const key = idAttr;
-
-          // Extract definition from <note type="explanation">
-          const noteElement = wordEl.querySelector('note[type="explanation"]');
-          const definition = noteElement?.textContent?.trim() || "";
-
-          if (definition) {
-            this.dictionary.set(key, definition);
-          } else {
-            if (index < 5) {
-              console.warn(
-                `BibleEngine: Hebrew entry ${key} missing definition`
-              );
-            }
-          }
-        });
-
-        console.log(
-          `BibleEngine: Loaded ${this.dictionary.size} Hebrew dictionary entries`
-        );
-      }
-    } catch (error) {
-      console.warn(
-        `BibleEngine: Error parsing dictionary XML (${type}):`,
-        error
-      );
-    }
-  }
-
-  /**
    * Initializes the engine. For now, it just parses the static sample XML.
+   * NOTE: Dictionary parsing logic removed. We now rely on DictionaryService.ts for all definitions.
    */
   async initialize(xmlString: string = BIBLE_SAMPLE_XML): Promise<void> {
     try {
       console.log("BibleEngine: initialize() called");
-      console.log("BibleEngine: XML string length:", xmlString?.length || 0);
-      console.log(
-        "BibleEngine: XML string preview (first 200 chars):",
-        xmlString?.substring(0, 200)
-      );
-
       const doc = this.parser.parseFromString(xmlString, "text/xml");
-      console.log("BibleEngine: Parser returned document:", doc);
-      console.log("BibleEngine: Document type:", doc?.constructor?.name);
-      console.log("BibleEngine: Document element:", doc?.documentElement);
-      console.log(
-        "BibleEngine: Document element tagName:",
-        doc?.documentElement?.tagName
-      );
 
       const parserError = doc.querySelector("parsererror");
-      if (parserError) {
-        console.error(
-          "BibleEngine: Parser error found:",
-          parserError.textContent
-        );
+      if (parserError)
         throw new Error(parserError.textContent || "XML parsing error");
-      }
 
-      // Cache initial sample books
       const books = doc.querySelectorAll('div[type="book"]');
-      console.log("BibleEngine: Found", books.length, "book nodes");
-
-      books.forEach((bookNode, index) => {
+      books.forEach((bookNode) => {
         const bookId = bookNode.getAttribute("osisID");
-        console.log(
-          `BibleEngine: Processing book ${index + 1}, osisID:`,
-          bookId
-        );
         if (bookId) {
-          // Create a standalone document for this book
           const bookDoc = document.implementation.createDocument(
             null,
             "osis",
@@ -351,17 +217,10 @@ export class BibleEngine {
             bookDoc.importNode(bookNode, true)
           );
           this.bookDocs.set(bookId, bookDoc);
-          console.log(
-            `BibleEngine: Cached book ${bookId}, bookDocs size:`,
-            this.bookDocs.size
-          );
-        } else {
-          console.warn("BibleEngine: Book node missing osisID attribute");
         }
       });
-
       console.log(
-        "BibleEngine: Initialized with sample data. Total books cached:",
+        "BibleEngine: Initialized. Cached books:",
         this.bookDocs.size
       );
     } catch (error) {
@@ -374,19 +233,10 @@ export class BibleEngine {
    * Loads a specific book XML from the assets folder.
    */
   public async loadBook(osisBookId: string): Promise<void> {
-    console.log("BibleEngine: loadBook() called with osisBookId:", osisBookId);
-    console.log("BibleEngine: Checking if book already cached...");
-    if (this.bookDocs.has(osisBookId)) {
-      console.log(
-        "BibleEngine: Book",
-        osisBookId,
-        "already cached, returning early"
-      );
-      return;
-    }
+    if (this.bookDocs.has(osisBookId)) return;
 
-    // Normalize the book ID and map to filename
     const normalizedBookId = normalizeBookId(osisBookId);
+    // Try explicit map, then casing fallbacks
     const fileName =
       BOOK_FILENAME_MAP[normalizedBookId] ||
       BOOK_FILENAME_MAP[normalizedBookId.toLowerCase()] ||
@@ -395,149 +245,35 @@ export class BibleEngine {
           normalizedBookId.slice(1).toLowerCase()
       ] ||
       `${normalizedBookId}.xml`;
-    console.log(
-      "BibleEngine: Mapped osisBookId:",
-      osisBookId,
-      "(normalized:",
-      normalizedBookId,
-      ") to filename:",
-      fileName
-    );
 
     const path = `/assets/${fileName}`;
-    const fullUrl = window.location.origin + path;
-    console.log("🌐 BibleEngine: EXACT URL being fetched:", fullUrl);
-    console.log("🌐 BibleEngine: Relative path:", path);
 
     try {
       const response = await fetch(path);
-      console.log("🌐 BibleEngine: Fetch completed");
-      console.log("🌐 BibleEngine: response.status:", response.status);
-      console.log("🌐 BibleEngine: response.statusText:", response.statusText);
-      console.log(
-        "BibleEngine: Fetch response status:",
-        response.status,
-        response.statusText
-      );
-      console.log("BibleEngine: Fetch response ok:", response.ok);
-      console.log(
-        "BibleEngine: Fetch response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
-
       if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
 
       const xmlString = await response.text();
-      console.log(
-        "BibleEngine: Raw response text length:",
-        xmlString?.length || 0
-      );
-      console.log(
-        "🔍 BibleEngine: First 50 characters of response:",
-        xmlString?.substring(0, 50)
-      );
-      console.log(
-        "🔍 BibleEngine: Response starts with '<' (XML)?",
-        xmlString?.startsWith("<")
-      );
-      console.log(
-        "🔍 BibleEngine: Response starts with '<!DOCTYPE' (HTML)?",
-        xmlString?.startsWith("<!DOCTYPE")
-      );
-      console.log(
-        "🔍 BibleEngine: Response starts with '<html' (HTML)?",
-        xmlString?.toLowerCase().startsWith("<html")
-      );
-
-      // Soft 404 check: throw error if response is HTML (likely a 404 page)
+      // Soft 404 check
       if (
-        xmlString?.startsWith("<!DOCTYPE") ||
-        xmlString?.toLowerCase().startsWith("<html")
+        xmlString.trim().startsWith("<!DOCTYPE") ||
+        xmlString.trim().toLowerCase().startsWith("<html")
       ) {
-        throw new Error(
-          `Soft 404: Received HTML response instead of XML for ${path}. The file may not exist.`
-        );
+        throw new Error("Soft 404: Received HTML instead of XML");
       }
-      console.log(
-        "BibleEngine: Raw response text preview (first 500 chars):",
-        xmlString?.substring(0, 500)
-      );
-      console.log(
-        "BibleEngine: Raw response text is empty?",
-        !xmlString || xmlString.length === 0
-      );
 
       const doc = this.parser.parseFromString(xmlString, "text/xml");
-      console.log("BibleEngine: Parser returned document:", doc);
-      console.log(
-        "BibleEngine: Document is null/undefined?",
-        doc === null || doc === undefined
-      );
-      console.log("BibleEngine: Document element:", doc?.documentElement);
-      console.log(
-        "BibleEngine: Document element tagName:",
-        doc?.documentElement?.tagName
-      );
+      if (doc.querySelector("parsererror")) throw new Error("XML parser error");
 
-      // Check for parser errors
-      const parserError = doc.querySelector("parsererror");
-      if (parserError) {
-        console.error(
-          "BibleEngine: XML parser error:",
-          parserError.textContent
-        );
-        throw new Error(`XML parsing error: ${parserError.textContent}`);
-      }
-
-      // Log the XML structure to help debug
-      console.log(
-        "BibleEngine: XML structure preview:",
-        doc.documentElement.innerHTML.slice(0, 500)
-      );
-
-      // First, try to find any <book> element (ignore ID matching)
+      // Locate book node
       let bookNode = doc.querySelector("book");
-      console.log("BibleEngine: Looking for generic <book> element");
-      console.log("BibleEngine: bookNode found:", bookNode !== null);
-      if (bookNode) {
-        console.log(
-          "BibleEngine: Found <book> element (ignoring ID match), tag:",
-          bookNode.tagName,
-          "id:",
-          bookNode.getAttribute("id"),
-          "osisID:",
-          bookNode.getAttribute("osisID")
-        );
-      }
-
-      // Fallback: Only search by ID if no generic <book> element was found
+      if (!bookNode) bookNode = doc.querySelector(`[osisID="${osisBookId}"]`);
       if (!bookNode) {
-        console.log(
-          "BibleEngine: No generic <book> element found, trying ID-based search..."
-        );
-        // Try the more flexible selector (without div constraint)
-        bookNode = doc.querySelector(`[osisID="${osisBookId}"]`);
-        console.log("BibleEngine: Looking for [osisID='" + osisBookId + "']");
-        console.log("BibleEngine: bookNode found:", bookNode !== null);
-        console.log("BibleEngine: bookNode:", bookNode);
-
-        // Additional fallback: search for any element with that osisID attribute
-        if (!bookNode) {
-          console.log(
-            "BibleEngine: Primary ID selector failed, trying fallback search..."
-          );
-          const allElements = doc.querySelectorAll("*");
-          for (let i = 0; i < allElements.length; i++) {
-            const element = allElements[i];
-            if (element.getAttribute("osisID") === osisBookId) {
-              bookNode = element;
-              console.log(
-                "BibleEngine: Found book node via fallback search:",
-                element.tagName,
-                element
-              );
-              break;
-            }
+        // Fallback: search all elements for osisID
+        const allElements = doc.querySelectorAll("*");
+        for (let i = 0; i < allElements.length; i++) {
+          if (allElements[i].getAttribute("osisID") === osisBookId) {
+            bookNode = allElements[i];
+            break;
           }
         }
       }
@@ -550,32 +286,12 @@ export class BibleEngine {
         );
         bookDoc.documentElement.appendChild(bookDoc.importNode(bookNode, true));
         this.bookDocs.set(osisBookId, bookDoc);
-        console.log(
-          `BibleEngine: Loaded full book ${osisBookId} from assets. bookDocs size:`,
-          this.bookDocs.size
-        );
+        console.log(`BibleEngine: Loaded ${osisBookId}`);
       } else {
-        console.warn(
-          "BibleEngine: Book node not found in parsed document for",
-          osisBookId
-        );
-        console.log(
-          "BibleEngine: Available div elements:",
-          doc.querySelectorAll("div").length
-        );
-        console.log(
-          "BibleEngine: All div[type='book'] elements:",
-          Array.from(doc.querySelectorAll('div[type="book"]')).map((d) =>
-            d.getAttribute("osisID")
-          )
-        );
+        console.warn(`BibleEngine: Could not find book node for ${osisBookId}`);
       }
     } catch (e) {
-      console.error(
-        `BibleEngine: Failed to load book ${osisBookId} from ${path}:`,
-        e
-      );
-      console.warn(`BibleEngine: Using sample if available.`);
+      console.error(`BibleEngine: Failed to load ${osisBookId}`, e);
     }
   }
 
@@ -585,13 +301,13 @@ export class BibleEngine {
   public parseReference(query: string): string {
     const regex = /^([a-zA-Z0-9\s]+)\s+(\d+):(\d+)$/;
     const match = query.trim().match(regex);
-
     if (!match) return query;
 
     let bookInput = match[1].trim().toLowerCase();
     const chapter = match[2];
     const verse = match[3];
 
+    // Check strict map first, then title case fallback
     const osisBook =
       SHORT_TO_OSIS[bookInput] ||
       bookInput.charAt(0).toUpperCase() + bookInput.slice(1);
@@ -605,317 +321,121 @@ export class BibleEngine {
    * Common helper for both flat and container formats.
    */
   private mapWordElement(w: Element, bookId: string, index: number): VerseWord {
-    // For Greek XML format: lemma attribute contains Strong's ID (e.g., "G1234")
     const lemmaValue = w.getAttribute("lemma") || "";
     const morphValue = w.getAttribute("morph") || "";
+    const rawStrongsAttr = w.getAttribute("strongs") || "";
 
-    // Determine strongsId from lemma (Greek XML format) or strongs attribute
-    let strongsId: string | null = null;
-    if (lemmaValue) {
-      // Check if lemma is already in Strong's format (G1234, H1234)
-      if (/^[GH]\d+/.test(lemmaValue)) {
-        strongsId = lemmaValue;
+    // Improved Logic: Don't force prefix if it exists
+    let strongsId = "";
+
+    // 1. Try "strongs" attribute directly (cleanest)
+    if (rawStrongsAttr) {
+      const clean = rawStrongsAttr.replace(/^strong:/, "");
+      // If it already starts with H or G, use it. Otherwise append.
+      if (/^[HG]\d+/.test(clean)) {
+        strongsId = clean;
       } else {
-        // Try to extract from lemma or use strongs attribute
-        const rawStrongs = (w.getAttribute("strongs") || lemmaValue).replace(
-          /^strong:/,
-          ""
-        );
-        if (rawStrongs) {
-          strongsId = `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`;
-        }
+        strongsId = `${this.isOT(bookId) ? "H" : "G"}${clean}`;
       }
-    } else {
-      // Fallback to strongs attribute if lemma is empty
-      const rawStrongs = w.getAttribute("strongs")?.replace(/^strong:/, "");
-      if (rawStrongs) {
-        strongsId = `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`;
+    }
+    // 2. Try parsing "lemma" (e.g. "strong:G1234" or just "G1234")
+    else if (lemmaValue) {
+      // Remove "strong:" prefix if present
+      const cleanLemma = lemmaValue.replace(/^strong:/, "");
+
+      if (/^[HG]\d+/.test(cleanLemma)) {
+        strongsId = cleanLemma; // It's already perfect (e.g. G1234)
+      } else {
+        // It's likely just a number "1234" or "01234"
+        const numericPart = cleanLemma.match(/\d+/)?.[0];
+        if (numericPart) {
+          strongsId = `${this.isOT(bookId) ? "H" : "G"}${numericPart}`;
+        }
       }
     }
 
-    // If mapping failed, log warning but don't crash
-    if (!strongsId && index < 5) {
-      console.warn(
-        `BibleEngine: Word ${index} - lemma mapping failed. lemma: "${lemmaValue}", strongs: "${w.getAttribute(
-          "strongs"
-        )}"`
+    // Debug logging for Greek words specifically
+    const isGreek = !this.isOT(bookId);
+    if (isGreek) {
+      console.log(
+        `🔍 BibleEngine: Greek word processing (bookId: ${bookId}, index: ${index}):`,
+        {
+          rawAttributes: {
+            lemma: lemmaValue,
+            strongs: rawStrongsAttr,
+            morph: morphValue,
+          },
+          finalStrongsId: strongsId,
+          text: w.textContent?.trim() || "",
+        }
       );
     }
 
-    const word: VerseWord = {
+    return {
       text: w.textContent?.trim() || "",
       lemma: lemmaValue,
       morph: morphValue,
-      strongs: strongsId || "", // Return empty string if mapping failed
+      strongs: strongsId,
       id:
         w.getAttribute("id") || `w-${Math.random().toString(36).substr(2, 9)}`,
     };
-
-    if (index < 3) {
-      console.log(`BibleEngine: Word ${index}:`, word);
-    }
-
-    return word;
   }
 
-  /**
-   * Gets a definition from the loaded dictionary by Strong's ID.
-   * @param id Strong's ID in format "G1234" or "H1234"
-   * @returns Definition text or null if not found
-   */
-  public getDefinition(id: string): string | null {
-    if (!id) {
-      console.warn("BibleEngine: getDefinition() called with empty ID");
-      return null;
-    }
-
-    // Normalize the ID (ensure it starts with G or H)
-    const normalizedId = id.trim();
-    const definition = this.dictionary.get(normalizedId);
-
-    if (!definition) {
-      console.warn(
-        `BibleEngine: Definition not found for ID: ${normalizedId} (dictionary size: ${this.dictionary.size})`
-      );
-      return null;
-    }
-
-    return definition;
-  }
-
-  /**
-   * Retrieves a verse from the cached book documents.
-   * Supports both flat XML structure (verse-number siblings) and container format (verse elements).
-   */
   public getVerse(osisID: string): ParsedVerse | null {
-    console.log("BibleEngine: getVerse() called with osisID:", osisID);
     const bookId = osisID.split(".")[0];
-    console.log("BibleEngine: Extracted bookId:", bookId);
-    console.log(
-      "BibleEngine: Current bookDocs keys:",
-      Array.from(this.bookDocs.keys())
-    );
-
     const doc = this.bookDocs.get(bookId);
-    console.log(
-      "BibleEngine: Document found for bookId:",
-      doc !== null && doc !== undefined
-    );
-    console.log("BibleEngine: Document:", doc);
 
     if (!doc) {
-      console.warn("BibleEngine: No document found for bookId:", bookId);
+      console.warn(`BibleEngine: Book ${bookId} not loaded`);
       return null;
     }
 
     const parts = osisID.split(".");
     let words: VerseWord[] = [];
 
-    // ============================================
-    // Strategy A: Flat/Milestone Format
-    // ============================================
-    console.log("BibleEngine: Trying Strategy A (Flat/Milestone format)...");
-
-    // Convert OSIS format (e.g., "Mark.1.1") to space-separated format (e.g., "Mark 1:1")
+    // Strategy A: Flat/Milestone (e.g. <verse-number id="Mark 1:1" /> ... <w>...)
     const spaceSeparatedId = `${parts[0]} ${parts[1]}:${parts[2]}`;
-    console.log(
-      "BibleEngine: Converted osisID to space-separated format:",
-      spaceSeparatedId
-    );
-
-    // Find the <verse-number> element using the space-separated ID
-    let verseNumberNode: Element | null = null;
-
-    // Try finding by id attribute first
-    verseNumberNode = doc.querySelector(
-      `verse-number[id="${spaceSeparatedId}"]`
-    );
-    if (!verseNumberNode) {
-      // Try osisID attribute
-      verseNumberNode = doc.querySelector(
-        `verse-number[osisID="${spaceSeparatedId}"]`
-      );
-    }
-    if (!verseNumberNode) {
-      // Try generic selector
-      verseNumberNode = doc.querySelector(`verse-number[id="${osisID}"]`);
-    }
-    if (!verseNumberNode) {
-      // Fallback: search all verse-number elements
-      const allVerseNumbers = doc.querySelectorAll("verse-number");
-      console.log(
-        "BibleEngine: Found",
-        allVerseNumbers.length,
-        "verse-number elements, searching manually..."
-      );
-      for (let i = 0; i < allVerseNumbers.length; i++) {
-        const element = allVerseNumbers[i];
-        const elementId = element.getAttribute("id");
-        const elementOsisId = element.getAttribute("osisID");
-        if (
-          elementId === spaceSeparatedId ||
-          elementOsisId === spaceSeparatedId ||
-          elementId === osisID ||
-          elementOsisId === osisID
-        ) {
-          verseNumberNode = element;
-          console.log(
-            "BibleEngine: Found verse-number via manual search:",
-            elementId,
-            elementOsisId
-          );
-          break;
-        }
-      }
-    }
+    let verseNumberNode =
+      doc.querySelector(`verse-number[id="${spaceSeparatedId}"]`) ||
+      doc.querySelector(`verse-number[osisID="${spaceSeparatedId}"]`) ||
+      doc.querySelector(`verse-number[id="${osisID}"]`);
 
     if (verseNumberNode) {
-      console.log(
-        `✅ BibleEngine: Verse-number node found (Strategy A) for osisID:`,
-        osisID
-      );
-
-      // Collect <w> elements from siblings after the verse-number element
-      let currentNode: Element | null = verseNumberNode.nextElementSibling;
-
-      console.log(
-        "BibleEngine: Starting to collect word siblings from verse-number..."
-      );
-
-      while (currentNode !== null) {
+      let currentNode = verseNumberNode.nextElementSibling;
+      while (currentNode) {
         const tagName = currentNode.tagName.toLowerCase();
-
-        // Stop if we hit the next verse-number, chapter, or end
-        if (tagName === "verse-number" || tagName === "chapter") {
-          console.log(
-            "BibleEngine: Stopping at",
-            tagName,
-            "tag. Collected",
-            words.length,
-            "words"
-          );
-          break;
-        }
-
-        // Collect <w> elements
+        if (tagName === "verse-number" || tagName === "chapter") break;
         if (tagName === "w") {
           words.push(this.mapWordElement(currentNode, bookId, words.length));
         }
-
         currentNode = currentNode.nextElementSibling;
       }
-
-      console.log(
-        "BibleEngine: Strategy A collected",
-        words.length,
-        "word nodes from siblings"
-      );
-    } else {
-      console.log(
-        "BibleEngine: Strategy A failed - no verse-number found, trying Strategy B..."
-      );
     }
 
-    // ============================================
-    // Strategy B: Container/Standard Format (FALLBACK)
-    // ============================================
+    // Strategy B: Container (e.g. <verse osisID="Gen.1.1"><w>...</verse>)
     if (words.length === 0) {
-      console.log(
-        "BibleEngine: Trying Strategy B (Container/Standard format)..."
-      );
-
-      // Use original OSIS format (dot-separated, e.g., "Gen.1.1")
-      let verseNode: Element | null = null;
-
-      // Try <verse> element with osisID
-      verseNode = doc.querySelector(`verse[osisID="${osisID}"]`);
-      if (!verseNode) {
-        // Try <div type="verse"> with osisID
-        verseNode = doc.querySelector(`div[type="verse"][osisID="${osisID}"]`);
-      }
-      if (!verseNode) {
-        // Try generic selector without tag constraint
-        verseNode = doc.querySelector(`[osisID="${osisID}"]`);
-      }
-      if (!verseNode) {
-        // Fallback: search all elements
-        const allElements = doc.querySelectorAll("*");
-        for (let i = 0; i < allElements.length; i++) {
-          const element = allElements[i];
-          if (element.getAttribute("osisID") === osisID) {
-            verseNode = element;
-            console.log(
-              "BibleEngine: Found verse node via fallback search:",
-              element.tagName,
-              element
-            );
-            break;
-          }
-        }
-      }
+      let verseNode =
+        doc.querySelector(`verse[osisID="${osisID}"]`) ||
+        doc.querySelector(`div[type="verse"][osisID="${osisID}"]`) ||
+        doc.querySelector(`[osisID="${osisID}"]`);
 
       if (verseNode) {
-        console.log(
-          `✅ BibleEngine: Verse container node found (Strategy B) for osisID:`,
-          osisID
-        );
-
-        // Collect <w> elements from children
         const wordNodes = verseNode.querySelectorAll("w");
-        console.log(
-          "BibleEngine: Found",
-          wordNodes.length,
-          "word nodes in verse container"
-        );
-
-        wordNodes.forEach((w, index) => {
-          words.push(this.mapWordElement(w, bookId, index));
+        wordNodes.forEach((w, i) => {
+          words.push(this.mapWordElement(w, bookId, i));
         });
-
-        console.log(
-          "BibleEngine: Strategy B collected",
-          words.length,
-          "word nodes from container children"
-        );
-      } else {
-        console.error(
-          "❌ BibleEngine: Verse node not found for osisID:",
-          osisID,
-          "- Both Strategy A and Strategy B failed!"
-        );
-        console.log(
-          "BibleEngine: Available elements with osisID attribute:",
-          Array.from(doc.querySelectorAll("[osisID]"))
-            .slice(0, 5)
-            .map((el) => ({
-              tag: el.tagName,
-              osisID: el.getAttribute("osisID"),
-            }))
-        );
-        return null;
       }
     }
 
-    // ============================================
-    // Common Output
-    // ============================================
-    const parsedVerse = {
+    if (words.length === 0) return null;
+
+    return {
       osisID,
       words,
       book: parts[0],
       chapter: parseInt(parts[1]),
       verse: parseInt(parts[2]),
     };
-
-    console.log("BibleEngine: Returning parsed verse:", {
-      osisID: parsedVerse.osisID,
-      book: parsedVerse.book,
-      chapter: parsedVerse.chapter,
-      verse: parsedVerse.verse,
-      wordCount: parsedVerse.words.length,
-    });
-
-    return parsedVerse;
   }
 }
 
