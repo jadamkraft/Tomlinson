@@ -81,9 +81,13 @@ const BOOK_FILENAME_MAP: Record<string, string> = {
   // New Testament
   Matthew: "Matt.xml",
   Matt: "Matt.xml",
+  Mt: "Matt.xml", // Additional abbreviation
   Mark: "Mark.xml",
+  Mk: "Mark.xml", // Additional abbreviation
   Luke: "Luke.xml",
+  Lk: "Luke.xml", // Additional abbreviation
   John: "John.xml",
+  Jn: "John.xml", // Additional abbreviation
   Acts: "Acts.xml",
   Romans: "Rom.xml",
   Rom: "Rom.xml",
@@ -110,6 +114,7 @@ const BOOK_FILENAME_MAP: Record<string, string> = {
   Titus: "Titus.xml",
   Philemon: "Phlm.xml",
   Phlm: "Phlm.xml",
+  Philem: "Phlm.xml", // Additional abbreviation
   Hebrews: "Heb.xml",
   Heb: "Heb.xml",
   James: "Jas.xml",
@@ -126,9 +131,17 @@ const BOOK_FILENAME_MAP: Record<string, string> = {
   Rev: "Rev.xml",
 };
 
+/**
+ * Normalizes a book ID by stripping spaces and handling case-insensitivity.
+ */
+function normalizeBookId(bookId: string): string {
+  return bookId.trim().replace(/\s+/g, "");
+}
+
 export class BibleEngine {
   private parser: DOMParser;
   private bookDocs: Map<string, Document> = new Map();
+  private dictionary: Map<string, string> = new Map();
 
   constructor() {
     this.parser = new DOMParser();
@@ -177,6 +190,114 @@ export class BibleEngine {
       "Mal",
     ];
     return OT_BOOKS.includes(bookId);
+  }
+
+  /**
+   * Parses dictionary XML for Greek or Hebrew entries.
+   * Greek: Parses <entry strongs="0001"> and extracts definition from <strongs_def>.
+   * Hebrew: Parses <w ID="H1"> and extracts definition from <note type="explanation">.
+   */
+  public parseDictionaryXML(xml: string, type: "GREEK" | "HEBREW"): void {
+    console.log(`BibleEngine: parseDictionaryXML() called for type: ${type}`);
+    try {
+      const doc = this.parser.parseFromString(xml, "text/xml");
+
+      // Check for parser errors
+      const parserError = doc.querySelector("parsererror");
+      if (parserError) {
+        console.warn(
+          `BibleEngine: XML parser error in dictionary (${type}):`,
+          parserError.textContent
+        );
+        return;
+      }
+
+      if (type === "GREEK") {
+        // Greek format: <entry strongs="0001">
+        const entries = doc.querySelectorAll("entry[strongs]");
+        console.log(
+          `BibleEngine: Found ${entries.length} Greek dictionary entries`
+        );
+
+        entries.forEach((entry, index) => {
+          const strongsAttr = entry.getAttribute("strongs");
+          if (!strongsAttr) {
+            if (index < 5) {
+              console.warn(
+                `BibleEngine: Greek entry at index ${index} missing strongs attribute`
+              );
+            }
+            return;
+          }
+
+          // Convert "0001" -> "G1" (remove leading zeros, add G prefix)
+          const numericId = parseInt(strongsAttr, 10).toString();
+          const key = `G${numericId}`;
+
+          // Extract definition from <strongs_def>
+          const defElement = entry.querySelector("strongs_def");
+          const definition = defElement?.textContent?.trim() || "";
+
+          if (definition) {
+            this.dictionary.set(key, definition);
+          } else {
+            if (index < 5) {
+              console.warn(
+                `BibleEngine: Greek entry ${key} missing definition`
+              );
+            }
+          }
+        });
+
+        console.log(
+          `BibleEngine: Loaded ${this.dictionary.size} Greek dictionary entries`
+        );
+      } else {
+        // Hebrew format: <w ID="H1">
+        const wordElements = doc.querySelectorAll("w[ID]");
+        console.log(
+          `BibleEngine: Found ${wordElements.length} Hebrew dictionary entries`
+        );
+
+        wordElements.forEach((wordEl, index) => {
+          const idAttr = wordEl.getAttribute("ID");
+          if (!idAttr) {
+            if (index < 5) {
+              console.warn(
+                `BibleEngine: Hebrew entry at index ${index} missing ID attribute`
+              );
+            }
+            return;
+          }
+
+          // ID should already be in format "H1", "H2", etc.
+          const key = idAttr;
+
+          // Extract definition from <note type="explanation">
+          const noteElement = wordEl.querySelector('note[type="explanation"]');
+          const definition = noteElement?.textContent?.trim() || "";
+
+          if (definition) {
+            this.dictionary.set(key, definition);
+          } else {
+            if (index < 5) {
+              console.warn(
+                `BibleEngine: Hebrew entry ${key} missing definition`
+              );
+            }
+          }
+        });
+
+        console.log(
+          `BibleEngine: Loaded ${this.dictionary.size} Hebrew dictionary entries`
+        );
+      }
+    } catch (error) {
+      console.warn(
+        `BibleEngine: Error parsing dictionary XML (${type}):`,
+        error
+      );
+    }
   }
 
   /**
@@ -264,12 +385,22 @@ export class BibleEngine {
       return;
     }
 
-    // Map OSIS ID to filename using the BOOK_FILENAME_MAP
-    const fileName = BOOK_FILENAME_MAP[osisBookId] || `${osisBookId}.xml`;
+    // Normalize the book ID and map to filename
+    const normalizedBookId = normalizeBookId(osisBookId);
+    const fileName =
+      BOOK_FILENAME_MAP[normalizedBookId] ||
+      BOOK_FILENAME_MAP[normalizedBookId.toLowerCase()] ||
+      BOOK_FILENAME_MAP[
+        normalizedBookId.charAt(0).toUpperCase() +
+          normalizedBookId.slice(1).toLowerCase()
+      ] ||
+      `${normalizedBookId}.xml`;
     console.log(
       "BibleEngine: Mapped osisBookId:",
       osisBookId,
-      "to filename:",
+      "(normalized:",
+      normalizedBookId,
+      ") to filename:",
       fileName
     );
 
@@ -470,21 +601,52 @@ export class BibleEngine {
 
   /**
    * Maps a word element to a VerseWord object.
+   * Handles both standard OSIS format and new Greek XML format.
    * Common helper for both flat and container formats.
    */
   private mapWordElement(w: Element, bookId: string, index: number): VerseWord {
+    // For Greek XML format: lemma attribute contains Strong's ID (e.g., "G1234")
     const lemmaValue = w.getAttribute("lemma") || "";
-    // Strip common OSIS prefixes like 'strong:' if they exist, then prepend our internal H/G
-    const rawStrongs = (w.getAttribute("strongs") || lemmaValue).replace(
-      /^strong:/,
-      ""
-    );
+    const morphValue = w.getAttribute("morph") || "";
 
-    const word = {
+    // Determine strongsId from lemma (Greek XML format) or strongs attribute
+    let strongsId: string | null = null;
+    if (lemmaValue) {
+      // Check if lemma is already in Strong's format (G1234, H1234)
+      if (/^[GH]\d+/.test(lemmaValue)) {
+        strongsId = lemmaValue;
+      } else {
+        // Try to extract from lemma or use strongs attribute
+        const rawStrongs = (w.getAttribute("strongs") || lemmaValue).replace(
+          /^strong:/,
+          ""
+        );
+        if (rawStrongs) {
+          strongsId = `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`;
+        }
+      }
+    } else {
+      // Fallback to strongs attribute if lemma is empty
+      const rawStrongs = w.getAttribute("strongs")?.replace(/^strong:/, "");
+      if (rawStrongs) {
+        strongsId = `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`;
+      }
+    }
+
+    // If mapping failed, log warning but don't crash
+    if (!strongsId && index < 5) {
+      console.warn(
+        `BibleEngine: Word ${index} - lemma mapping failed. lemma: "${lemmaValue}", strongs: "${w.getAttribute(
+          "strongs"
+        )}"`
+      );
+    }
+
+    const word: VerseWord = {
       text: w.textContent?.trim() || "",
       lemma: lemmaValue,
-      morph: w.getAttribute("morph") || "",
-      strongs: `${this.isOT(bookId) ? "H" : "G"}${rawStrongs}`,
+      morph: morphValue,
+      strongs: strongsId || "", // Return empty string if mapping failed
       id:
         w.getAttribute("id") || `w-${Math.random().toString(36).substr(2, 9)}`,
     };
@@ -494,6 +656,31 @@ export class BibleEngine {
     }
 
     return word;
+  }
+
+  /**
+   * Gets a definition from the loaded dictionary by Strong's ID.
+   * @param id Strong's ID in format "G1234" or "H1234"
+   * @returns Definition text or null if not found
+   */
+  public getDefinition(id: string): string | null {
+    if (!id) {
+      console.warn("BibleEngine: getDefinition() called with empty ID");
+      return null;
+    }
+
+    // Normalize the ID (ensure it starts with G or H)
+    const normalizedId = id.trim();
+    const definition = this.dictionary.get(normalizedId);
+
+    if (!definition) {
+      console.warn(
+        `BibleEngine: Definition not found for ID: ${normalizedId} (dictionary size: ${this.dictionary.size})`
+      );
+      return null;
+    }
+
+    return definition;
   }
 
   /**
