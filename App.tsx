@@ -8,6 +8,8 @@ import CommandBar from "./components/CommandBar";
 import { Book, History } from "lucide-react";
 
 const App: React.FC = () => {
+  console.log("🚀 App Mounting");
+
   const [status, setStatus] = useState<EngineStatus>(EngineStatus.IDLE);
   const [currentVerse, setCurrentVerse] = useState<ParsedVerse | null>(null);
   const [selectedWord, setSelectedWord] = useState<VerseWord | null>(null);
@@ -73,6 +75,8 @@ const App: React.FC = () => {
 
   // Initialize engine on mount
   useEffect(() => {
+    console.log("🔥 App: useEffect FIRED - initialization starting");
+
     const init = async () => {
       console.log("App: Starting initialization...");
       console.log("App: Setting status to LOADING");
@@ -109,6 +113,19 @@ const App: React.FC = () => {
   const handleSelectWord = useCallback((word: VerseWord) => {
     setSelectedWord(word);
   }, []);
+
+  // AGGRESSIVE DEBUG: Log state values before JSX render
+  console.log(
+    "🔍 App: Pre-render state check - status:",
+    status,
+    "currentVerse:",
+    currentVerse
+  );
+  console.log("🔍 App: status === LOADING?", status === EngineStatus.LOADING);
+  console.log("🔍 App: status === READY?", status === EngineStatus.READY);
+  console.log("🔍 App: status === ERROR?", status === EngineStatus.ERROR);
+  console.log("🔍 App: currentVerse is null?", currentVerse === null);
+  console.log("🔍 App: currentVerse is undefined?", currentVerse === undefined);
 
   return (
     <div className="flex flex-col h-screen bg-slate-950 overflow-hidden">

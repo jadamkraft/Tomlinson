@@ -145,10 +145,15 @@ export class BibleEngine {
     if (osisBookId === "John") fileName = "John.xml";
 
     const path = `/assets/${fileName}`;
-    console.log("BibleEngine: Fetching from path:", path);
+    const fullUrl = window.location.origin + path;
+    console.log("🌐 BibleEngine: EXACT URL being fetched:", fullUrl);
+    console.log("🌐 BibleEngine: Relative path:", path);
 
     try {
       const response = await fetch(path);
+      console.log("🌐 BibleEngine: Fetch completed");
+      console.log("🌐 BibleEngine: response.status:", response.status);
+      console.log("🌐 BibleEngine: response.statusText:", response.statusText);
       console.log(
         "BibleEngine: Fetch response status:",
         response.status,
@@ -166,6 +171,22 @@ export class BibleEngine {
       console.log(
         "BibleEngine: Raw response text length:",
         xmlString?.length || 0
+      );
+      console.log(
+        "🔍 BibleEngine: First 50 characters of response:",
+        xmlString?.substring(0, 50)
+      );
+      console.log(
+        "🔍 BibleEngine: Response starts with '<' (XML)?",
+        xmlString?.startsWith("<")
+      );
+      console.log(
+        "🔍 BibleEngine: Response starts with '<!DOCTYPE' (HTML)?",
+        xmlString?.startsWith("<!DOCTYPE")
+      );
+      console.log(
+        "🔍 BibleEngine: Response starts with '<html' (HTML)?",
+        xmlString?.toLowerCase().startsWith("<html")
       );
       console.log(
         "BibleEngine: Raw response text preview (first 500 chars):",
