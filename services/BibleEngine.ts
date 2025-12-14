@@ -332,19 +332,57 @@ export class BibleEngine {
       return null;
     }
 
-    const verseNode = doc.querySelector(`verse[osisID="${osisID}"]`);
-    console.log("BibleEngine: Looking for verse[osisID='" + osisID + "']");
-    console.log("BibleEngine: verseNode found:", verseNode !== null);
+    // Try the more flexible selector first (without verse tag constraint)
+    let verseNode = doc.querySelector(`[osisID="${osisID}"]`);
+    let foundVia = "selector";
+    console.log("BibleEngine: Looking for [osisID='" + osisID + "']");
+    console.log(
+      "BibleEngine: verseNode found via selector:",
+      verseNode !== null
+    );
     console.log("BibleEngine: verseNode:", verseNode);
 
+    // Fallback: search for any element with that osisID attribute
     if (!verseNode) {
-      console.warn("BibleEngine: Verse node not found for osisID:", osisID);
       console.log(
-        "BibleEngine: Available verse elements in doc:",
-        doc.querySelectorAll("verse").length
+        "BibleEngine: Primary selector failed, trying fallback search..."
+      );
+      const allElements = doc.querySelectorAll("*");
+      for (let i = 0; i < allElements.length; i++) {
+        const element = allElements[i];
+        if (element.getAttribute("osisID") === osisID) {
+          verseNode = element;
+          foundVia = "fallback";
+          console.log(
+            "BibleEngine: Found verse node via fallback search:",
+            element.tagName,
+            element
+          );
+          break;
+        }
+      }
+    }
+
+    if (!verseNode) {
+      console.error(
+        "❌ BibleEngine: Verse node not found for osisID:",
+        osisID,
+        "- Both selector and fallback failed!"
+      );
+      console.log(
+        "BibleEngine: Available elements with osisID attribute:",
+        Array.from(doc.querySelectorAll("[osisID]")).map((el) => ({
+          tag: el.tagName,
+          osisID: el.getAttribute("osisID"),
+        }))
       );
       return null;
     }
+
+    console.log(
+      `✅ BibleEngine: Verse node found via ${foundVia} for osisID:`,
+      osisID
+    );
 
     const words: VerseWord[] = [];
     const wordNodes = verseNode.querySelectorAll("w");
