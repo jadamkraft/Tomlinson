@@ -109,41 +109,200 @@ export class DictionaryService {
         throw new Error(`XML parsing error: ${parserError.textContent}`);
       }
 
-      const entryNodes = doc.querySelectorAll("entry");
+      // Detect XML format by checking root tag
+      const rootTag = doc.documentElement?.tagName || "";
       console.log(
-        "DictionaryService: Found",
-        entryNodes.length,
-        "entry nodes in",
+        "DictionaryService: Detected root tag:",
+        rootTag,
+        "for path:",
         path
       );
 
       let entriesAdded = 0;
-      entryNodes.forEach((node, index) => {
-        const id = node.getAttribute("id");
-        const word = node.querySelector("w")?.textContent || "";
-        const def = node.querySelector("def")?.textContent || "";
 
-        if (index < 3) {
+      if (rootTag === "strongsdictionary") {
+        // Greek format: Use existing logic but fix ID attribute reading
+        console.log(
+          "DictionaryService: Parsing as Greek (strongsdictionary) format"
+        );
+        const entryNodes = doc.querySelectorAll("entry");
+        console.log(
+          "DictionaryService: Found",
+          entryNodes.length,
+          "entry nodes in",
+          path
+        );
+
+        entryNodes.forEach((node, index) => {
+          // Check for 'strongs' attribute if 'id' is missing
+          const id = node.getAttribute("id") || node.getAttribute("strongs");
+          const word = node.querySelector("w")?.textContent || "";
+          const def = node.querySelector("def")?.textContent || "";
+
+          if (index < 3) {
+            console.log(
+              `DictionaryService: Entry ${index} - id:`,
+              id,
+              "word:",
+              word,
+              "def preview:",
+              def?.substring(0, 50)
+            );
+            console.log(
+              `DictionaryService: Entry ${index} - id attribute:`,
+              node.getAttribute("id"),
+              "strongs attribute:",
+              node.getAttribute("strongs")
+            );
+          }
+
+          if (id) {
+            targetMap.set(id, { word, def });
+            entriesAdded++;
+          } else {
+            console.warn(
+              "DictionaryService: Entry node missing both id and strongs attributes at index",
+              index
+            );
+          }
+        });
+      } else if (rootTag === "osis" || rootTag === "osisText") {
+        // Hebrew format: OSIS XML structure
+        console.log("DictionaryService: Parsing as Hebrew (OSIS) format");
+
+        // Log the structure to understand it better
+        const osisText = doc.querySelector("osisText") || doc.documentElement;
+        console.log(
+          "DictionaryService: osisText element:",
+          osisText?.tagName,
+          osisText
+        );
+
+        // Log first 5 children to understand structure
+        const children = Array.from(osisText?.children || []);
+        console.log(
+          "DictionaryService: First 5 children of osisText:",
+          children.slice(0, 5).map((child) => ({
+            tag: child.tagName,
+            type: child.getAttribute("type"),
+            osisID: child.getAttribute("osisID"),
+            id: child.getAttribute("id"),
+          }))
+        );
+
+        // Try different selectors for OSIS format
+        let entryNodes: NodeListOf<Element> | Element[] =
+          doc.querySelectorAll('div[type="entry"]');
+        console.log(
+          "DictionaryService: Found",
+          entryNodes.length,
+          'div[type="entry"] nodes'
+        );
+
+        if (entryNodes.length === 0) {
+          entryNodes = Array.from(doc.querySelectorAll('div[type="article"]'));
           console.log(
-            `DictionaryService: Entry ${index} - id:`,
-            id,
-            "word:",
-            word,
-            "def preview:",
-            def?.substring(0, 50)
+            "DictionaryService: Found",
+            entryNodes.length,
+            'div[type="article"] nodes'
           );
         }
 
-        if (id) {
-          targetMap.set(id, { word, def });
-          entriesAdded++;
-        } else {
-          console.warn(
-            "DictionaryService: Entry node missing id attribute at index",
-            index
+        if (entryNodes.length === 0) {
+          // Try searching for any div with osisID or id attribute
+          const allDivs = doc.querySelectorAll("div");
+          console.log(
+            "DictionaryService: Total div elements found:",
+            allDivs.length
+          );
+          entryNodes = Array.from(allDivs).filter(
+            (div) =>
+              div.getAttribute("osisID") ||
+              div.getAttribute("id") ||
+              div.getAttribute("type")
+          );
+          console.log(
+            "DictionaryService: Filtered divs with attributes:",
+            entryNodes.length
           );
         }
-      });
+
+        entryNodes.forEach((node, index) => {
+          // Try multiple attribute sources for ID
+          const id =
+            node.getAttribute("osisID") ||
+            node.getAttribute("id") ||
+            node.getAttribute("strongs");
+
+          // Try different selectors for word and definition
+          const word =
+            node.querySelector("w")?.textContent?.trim() ||
+            node.querySelector("title")?.textContent?.trim() ||
+            node.querySelector("div[type='title']")?.textContent?.trim() ||
+            "";
+
+          const def =
+            node.querySelector("def")?.textContent?.trim() ||
+            node.querySelector("div[type='definition']")?.textContent?.trim() ||
+            node.querySelector("p")?.textContent?.trim() ||
+            "";
+
+          if (index < 5) {
+            console.log(
+              `DictionaryService: Hebrew Entry ${index} - id:`,
+              id,
+              "word:",
+              word,
+              "def preview:",
+              def?.substring(0, 50)
+            );
+            console.log(
+              `DictionaryService: Hebrew Entry ${index} - tag:`,
+              node.tagName,
+              "type:",
+              node.getAttribute("type"),
+              "osisID:",
+              node.getAttribute("osisID"),
+              "id:",
+              node.getAttribute("id")
+            );
+          }
+
+          if (id) {
+            targetMap.set(id, { word, def });
+            entriesAdded++;
+          } else {
+            console.warn(
+              "DictionaryService: Hebrew entry node missing id/osisID/strongs attributes at index",
+              index,
+              "tag:",
+              node.tagName
+            );
+          }
+        });
+      } else {
+        console.warn(
+          "DictionaryService: Unknown XML format. Root tag:",
+          rootTag
+        );
+        // Fallback: try the original entry selector
+        const entryNodes = doc.querySelectorAll("entry");
+        console.log(
+          "DictionaryService: Fallback - Found",
+          entryNodes.length,
+          "entry nodes"
+        );
+        entryNodes.forEach((node, index) => {
+          const id = node.getAttribute("id") || node.getAttribute("strongs");
+          const word = node.querySelector("w")?.textContent || "";
+          const def = node.querySelector("def")?.textContent || "";
+
+          if (id) {
+            targetMap.set(id, { word, def });
+            entriesAdded++;
+          }
+        });
+      }
 
       console.log(
         "DictionaryService: Added",
