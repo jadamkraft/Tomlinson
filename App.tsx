@@ -5,6 +5,7 @@ import { ParsedVerse, VerseWord, EngineStatus } from "./types";
 import Reader from "./components/Reader";
 import Inspector from "./components/Inspector";
 import CommandBar from "./components/CommandBar";
+import NavigationDrawer from "./components/NavigationDrawer";
 import { Book, History } from "lucide-react";
 
 const App: React.FC = () => {
@@ -13,6 +14,7 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<EngineStatus>(EngineStatus.IDLE);
   const [currentVerse, setCurrentVerse] = useState<ParsedVerse | null>(null);
   const [selectedWord, setSelectedWord] = useState<VerseWord | null>(null);
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   console.log(
     "App: Render - status:",
@@ -146,6 +148,14 @@ const App: React.FC = () => {
     [currentVerse]
   );
 
+  const handleBookSelect = useCallback(
+    async (bookOsisId: string) => {
+      await handleSearch(`${bookOsisId} 1:1`);
+      setIsNavOpen(false);
+    },
+    [handleSearch]
+  );
+
   // AGGRESSIVE DEBUG: Log state values before JSX render
   console.log(
     "🔍 App: Pre-render state check - status:",
@@ -164,9 +174,13 @@ const App: React.FC = () => {
       {/* Top Header */}
       <header className="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 bg-slate-950/80 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">
-          <div className="bg-sky-600 p-1.5 rounded text-white">
+          <button
+            onClick={() => setIsNavOpen(true)}
+            className="bg-sky-600 p-1.5 rounded text-white hover:bg-sky-500 transition-colors cursor-pointer"
+            aria-label="Open book navigation"
+          >
             <Book size={18} />
-          </div>
+          </button>
           <span className="font-bold tracking-tight text-slate-200">
             Tomlinson <span className="text-sky-500">10</span>
           </span>
@@ -225,6 +239,13 @@ const App: React.FC = () => {
 
       {/* Footer / Command Bar */}
       <CommandBar onSearch={handleSearch} />
+
+      {/* Navigation Drawer */}
+      <NavigationDrawer
+        isOpen={isNavOpen}
+        onClose={() => setIsNavOpen(false)}
+        onSelectBook={handleBookSelect}
+      />
     </div>
   );
 };
