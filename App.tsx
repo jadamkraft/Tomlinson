@@ -117,40 +117,8 @@ const App: React.FC = () => {
   }, []);
 
   const handleNavigate = useCallback(
-    async (offset: number) => {
-      if (!currentVerse) return;
-
-      const targetOsisId = engine.getAdjacentVerse(currentVerse.osisID, offset);
-      if (!targetOsisId) {
-        console.warn(
-          `App: No adjacent verse found for ${currentVerse.osisID} with offset ${offset}`
-        );
-        return;
-      }
-
-      console.log(
-        `App: Navigating from ${currentVerse.osisID} to ${targetOsisId}`
-      );
-      const bookId = targetOsisId.split(".")[0];
-
-      // Ensure the book is loaded
-      await engine.loadBook(bookId);
-
-      // Get the verse
-      const verse = engine.getVerse(targetOsisId);
-      if (verse) {
-        setCurrentVerse(verse);
-        setSelectedWord(null);
-      } else {
-        console.warn(`App: Verse not found: ${targetOsisId}`);
-      }
-    },
-    [currentVerse]
-  );
-
-  const handleBookSelect = useCallback(
-    async (bookOsisId: string) => {
-      await handleSearch(`${bookOsisId} 1:1`);
+    async (book: string, chapter: number, verse: number) => {
+      await handleSearch(`${book} ${chapter}:${verse}`);
       setIsNavOpen(false);
     },
     [handleSearch]
@@ -244,7 +212,7 @@ const App: React.FC = () => {
       <NavigationDrawer
         isOpen={isNavOpen}
         onClose={() => setIsNavOpen(false)}
-        onSelectBook={handleBookSelect}
+        onNavigate={handleNavigate}
       />
     </div>
   );
