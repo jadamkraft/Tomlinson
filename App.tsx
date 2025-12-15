@@ -114,6 +114,38 @@ const App: React.FC = () => {
     setSelectedWord(word);
   }, []);
 
+  const handleNavigate = useCallback(
+    async (offset: number) => {
+      if (!currentVerse) return;
+
+      const targetOsisId = engine.getAdjacentVerse(currentVerse.osisID, offset);
+      if (!targetOsisId) {
+        console.warn(
+          `App: No adjacent verse found for ${currentVerse.osisID} with offset ${offset}`
+        );
+        return;
+      }
+
+      console.log(
+        `App: Navigating from ${currentVerse.osisID} to ${targetOsisId}`
+      );
+      const bookId = targetOsisId.split(".")[0];
+
+      // Ensure the book is loaded
+      await engine.loadBook(bookId);
+
+      // Get the verse
+      const verse = engine.getVerse(targetOsisId);
+      if (verse) {
+        setCurrentVerse(verse);
+        setSelectedWord(null);
+      } else {
+        console.warn(`App: Verse not found: ${targetOsisId}`);
+      }
+    },
+    [currentVerse]
+  );
+
   // AGGRESSIVE DEBUG: Log state values before JSX render
   console.log(
     "🔍 App: Pre-render state check - status:",
@@ -183,7 +215,11 @@ const App: React.FC = () => {
 
         {/* Inspector Zone (B) - Stacks on bottom for mobile */}
         <section className="h-1/2 lg:h-full w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-950 shrink-0 flex flex-col overflow-hidden">
-          <Inspector selectedWord={selectedWord} currentVerse={currentVerse} />
+          <Inspector
+            selectedWord={selectedWord}
+            currentVerse={currentVerse}
+            onNavigate={handleNavigate}
+          />
         </section>
       </main>
 

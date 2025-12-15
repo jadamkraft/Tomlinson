@@ -2,14 +2,15 @@ import React from 'react';
 import { VerseWord, ParsedVerse } from '../types';
 import { MorphDecoder } from '../services/MorphDecoder';
 import { dictionary } from '../services/DictionaryService';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface InspectorProps {
   selectedWord: VerseWord | null;
   currentVerse: ParsedVerse | null;
+  onNavigate?: (offset: number) => void;
 }
 
-const Inspector: React.FC<InspectorProps> = ({ selectedWord, currentVerse }) => {
+const Inspector: React.FC<InspectorProps> = ({ selectedWord, currentVerse, onNavigate }) => {
   if (!currentVerse) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 text-slate-500 italic">
@@ -22,7 +23,31 @@ const Inspector: React.FC<InspectorProps> = ({ selectedWord, currentVerse }) => 
     return (
       <div className="h-full p-6 flex flex-col space-y-6 overflow-y-auto">
         <div className="border-b border-slate-800 pb-4">
-          <h2 className="text-xl font-bold text-sky-400">{currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}</h2>
+          <div className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate(-1)}
+                  className="p-1.5 text-slate-400 hover:text-sky-400 transition-colors rounded hover:bg-slate-900"
+                  title="Previous verse"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+              )}
+              <h2 className="text-xl font-bold text-sky-400">
+                {currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}
+              </h2>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate(1)}
+                  className="p-1.5 text-slate-400 hover:text-sky-400 transition-colors rounded hover:bg-slate-900"
+                  title="Next verse"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              )}
+            </div>
+          </div>
           <p className="text-slate-400 text-sm mt-1 uppercase tracking-widest">Verse Summary</p>
         </div>
         <div className="space-y-4">

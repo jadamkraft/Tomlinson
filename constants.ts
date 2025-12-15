@@ -176,6 +176,7 @@ export const SHORT_TO_OSIS: Record<string, string> = {
   eph: "Eph",
   ph: "Phil",
   phil: "Phil",
+  philippians: "Phil",
   php: "Phil",
   co: "Col",
   col: "Col",

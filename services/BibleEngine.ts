@@ -297,20 +297,56 @@ export class BibleEngine {
 
   /**
    * Normalizes a reference string like "Jn 1:1" or "Gen 1:1" into an osisID.
+   * Now supports flexible separators (:, ., or space) and chapter-only queries.
    */
   public parseReference(query: string): string {
-    const regex = /^([a-zA-Z0-9\s]+)\s+(\d+):(\d+)$/;
-    const match = query.trim().match(regex);
-    if (!match) return query;
+    const trimmed = query.trim();
+    if (!trimmed) return query;
 
-    let bookInput = match[1].trim().toLowerCase();
-    const chapter = match[2];
-    const verse = match[3];
+    // Normalize book name: handle spaces in numbered books (e.g., "1 John" -> "1John")
+    // First, extract potential book name (everything before the first number that's part of chapter/verse)
+    // Try multiple patterns: "Book 1:1", "Book 1.1", "Book 1 1", "Book 1"
+    let bookInput = "";
+    let chapter = "";
+    let verse = "1"; // Default to verse 1
 
-    // Check strict map first, then title case fallback
-    const osisBook =
-      SHORT_TO_OSIS[bookInput] ||
-      bookInput.charAt(0).toUpperCase() + bookInput.slice(1);
+    // Pattern 1: Book Chapter:Verse or Book Chapter.Verse or Book Chapter Verse
+    const pattern1 = /^(.+?)\s+(\d+)[:.\s]+(\d+)$/;
+    const match1 = trimmed.match(pattern1);
+    if (match1) {
+      bookInput = match1[1].trim();
+      chapter = match1[2];
+      verse = match1[3];
+    } else {
+      // Pattern 2: Book Chapter (no verse - default to 1)
+      const pattern2 = /^(.+?)\s+(\d+)$/;
+      const match2 = trimmed.match(pattern2);
+      if (match2) {
+        bookInput = match2[1].trim();
+        chapter = match2[2];
+        verse = "1"; // Default to verse 1
+      } else {
+        // If no pattern matches, return as-is
+        return query;
+      }
+    }
+
+    // Normalize book name: handle spaces in numbered books and case-insensitive matching
+    // "1 John" -> "1john", "1Cor" -> "1cor", "GEN" -> "gen"
+    const normalizedBook = bookInput.replace(/\s+/g, "").toLowerCase();
+    const bookInputLower = bookInput.toLowerCase();
+
+    // Check strict map with multiple variations:
+    // 1. Normalized (no spaces, lowercase): "1john"
+    // 2. Original with spaces (lowercase): "1 john"
+    // 3. Original without spaces (lowercase): "1john" (same as #1)
+    // 4. Title case fallback
+    let osisBook =
+      SHORT_TO_OSIS[normalizedBook] ||
+      SHORT_TO_OSIS[bookInputLower] ||
+      SHORT_TO_OSIS[bookInputLower.replace(/\s+/g, "")] ||
+      bookInput.replace(/\s+/g, "").charAt(0).toUpperCase() +
+        bookInput.replace(/\s+/g, "").slice(1).toLowerCase();
 
     return `${osisBook}.${chapter}.${verse}`;
   }
@@ -450,6 +486,99 @@ export class BibleEngine {
       chapter: parseInt(parts[1]),
       verse: parseInt(parts[2]),
     };
+  }
+
+  /**
+   * Gets the adjacent verse ID (next or previous) based on offset.
+   * @param currentOsisId Current verse OSIS ID (e.g., "Gen.1.1")
+   * @param offset -1 for previous, 1 for next
+   * @returns Adjacent verse OSIS ID or null if not found
+   */
+  public getAdjacentVerse(
+    currentOsisId: string,
+    offset: number
+  ): string | null {
+    const parts = currentOsisId.split(".");
+    if (parts.length !== 3) return null;
+
+    const bookId = parts[0];
+    let chapter = parseInt(parts[1]);
+    let verse = parseInt(parts[2]);
+
+    // Calculate target verse
+    verse += offset;
+
+    // If verse goes below 1, try previous chapter
+    if (verse < 1) {
+      chapter -= 1;
+      if (chapter < 1) return null; // Can't go before chapter 1
+
+      // Try to find the last verse of the previous chapter
+      const doc = this.bookDocs.get(bookId);
+      if (!doc) {
+        // If book not loaded, try verse 1 of previous chapter
+        verse = 1;
+      } else {
+        // Search for the last verse in the previous chapter
+        let lastVerse = 1;
+        for (let v = 1; v <= 200; v++) {
+          // Try both formats
+          const testId1 = `${bookId}.${chapter}.${v}`;
+          const testId2 = `${bookId} ${chapter}:${v}`;
+          const verseNode =
+            doc.querySelector(`verse[osisID="${testId1}"]`) ||
+            doc.querySelector(`verse-number[id="${testId2}"]`) ||
+            doc.querySelector(`[osisID="${testId1}"]`);
+          if (verseNode) {
+            lastVerse = v;
+          } else {
+            break; // No more verses in this chapter
+          }
+        }
+        verse = lastVerse;
+      }
+    }
+
+    // Build target OSIS ID
+    const targetOsisId = `${bookId}.${chapter}.${verse}`;
+
+    // Verify the verse exists
+    const doc = this.bookDocs.get(bookId);
+    if (doc) {
+      // Try multiple formats to find the verse
+      const spaceSeparatedId = `${bookId} ${chapter}:${verse}`;
+      const verseExists =
+        doc.querySelector(`verse[osisID="${targetOsisId}"]`) !== null ||
+        doc.querySelector(`verse-number[id="${spaceSeparatedId}"]`) !== null ||
+        doc.querySelector(`verse-number[osisID="${spaceSeparatedId}"]`) !==
+          null ||
+        doc.querySelector(`[osisID="${targetOsisId}"]`) !== null;
+
+      if (!verseExists) {
+        // If verse doesn't exist, try next chapter (for forward navigation)
+        if (offset > 0) {
+          chapter += 1;
+          verse = 1;
+          const nextChapterId = `${bookId}.${chapter}.${verse}`;
+          const nextChapterSpaceId = `${bookId} ${chapter}:${verse}`;
+          const nextChapterExists =
+            doc.querySelector(`verse[osisID="${nextChapterId}"]`) !== null ||
+            doc.querySelector(`verse-number[id="${nextChapterSpaceId}"]`) !==
+              null ||
+            doc.querySelector(
+              `verse-number[osisID="${nextChapterSpaceId}"]`
+            ) !== null ||
+            doc.querySelector(`[osisID="${nextChapterId}"]`) !== null;
+
+          if (nextChapterExists) {
+            return nextChapterId;
+          }
+        }
+        return null;
+      }
+    }
+
+    return targetOsisId;
   }
 }
 
