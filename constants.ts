@@ -281,6 +281,482 @@ export const SHORT_TO_OSIS: Record<string, string> = {
   rev: "Rev",
 };
 
+/**
+ * Comprehensive mapping from book identifiers (OSIS IDs, full names, abbreviations, lowercase variants)
+ * to their exact filenames in the assets folder.
+ * This is the single source of truth for book-to-filename resolution.
+ */
+export const BOOK_FILENAME_MAPPING: Record<string, string> = {
+  // Old Testament - Genesis
+  Genesis: "Gen.xml",
+  Gen: "Gen.xml",
+  genesis: "Gen.xml",
+  gen: "Gen.xml",
+  gn: "Gen.xml",
+
+  // Old Testament - Exodus
+  Exodus: "Exod.xml",
+  Exod: "Exod.xml",
+  exodus: "Exod.xml",
+  exod: "Exod.xml",
+  ex: "Exod.xml",
+
+  // Old Testament - Leviticus
+  Leviticus: "Lev.xml",
+  Lev: "Lev.xml",
+  leviticus: "Lev.xml",
+  lev: "Lev.xml",
+  lv: "Lev.xml",
+
+  // Old Testament - Numbers
+  Numbers: "Num.xml",
+  Num: "Num.xml",
+  numbers: "Num.xml",
+  num: "Num.xml",
+  nm: "Num.xml",
+
+  // Old Testament - Deuteronomy
+  Deuteronomy: "Deut.xml",
+  Deut: "Deut.xml",
+  deuteronomy: "Deut.xml",
+  deut: "Deut.xml",
+  dt: "Deut.xml",
+
+  // Old Testament - Joshua
+  Joshua: "Josh.xml",
+  Josh: "Josh.xml",
+  joshua: "Josh.xml",
+  josh: "Josh.xml",
+  js: "Josh.xml",
+
+  // Old Testament - Judges
+  Judges: "Judg.xml",
+  Judg: "Judg.xml",
+  judges: "Judg.xml",
+  judg: "Judg.xml",
+  jg: "Judg.xml",
+
+  // Old Testament - Ruth
+  Ruth: "Ruth.xml",
+  ruth: "Ruth.xml",
+  ru: "Ruth.xml",
+
+  // Old Testament - 1 Samuel
+  "1Samuel": "1Sam.xml",
+  "1Sam": "1Sam.xml",
+  "1 Samuel": "1Sam.xml",
+  "1samuel": "1Sam.xml",
+  "1sam": "1Sam.xml",
+  "1sa": "1Sam.xml",
+
+  // Old Testament - 2 Samuel
+  "2Samuel": "2Sam.xml",
+  "2Sam": "2Sam.xml",
+  "2 Samuel": "2Sam.xml",
+  "2samuel": "2Sam.xml",
+  "2sam": "2Sam.xml",
+  "2sa": "2Sam.xml",
+
+  // Old Testament - 1 Kings
+  "1Kings": "1Kgs.xml",
+  "1Kgs": "1Kgs.xml",
+  "1 Kings": "1Kgs.xml",
+  "1kings": "1Kgs.xml",
+  "1kgs": "1Kgs.xml",
+  "1ki": "1Kgs.xml",
+  "1kg": "1Kgs.xml",
+
+  // Old Testament - 2 Kings
+  "2Kings": "2Kgs.xml",
+  "2Kgs": "2Kgs.xml",
+  "2 Kings": "2Kgs.xml",
+  "2kings": "2Kgs.xml",
+  "2kgs": "2Kgs.xml",
+  "2ki": "2Kgs.xml",
+  "2kg": "2Kgs.xml",
+
+  // Old Testament - 1 Chronicles
+  "1Chronicles": "1Chr.xml",
+  "1Chr": "1Chr.xml",
+  "1 Chronicles": "1Chr.xml",
+  "1chronicles": "1Chr.xml",
+  "1chr": "1Chr.xml",
+  "1ch": "1Chr.xml",
+  "1chron": "1Chr.xml",
+
+  // Old Testament - 2 Chronicles
+  "2Chronicles": "2Chr.xml",
+  "2Chr": "2Chr.xml",
+  "2 Chronicles": "2Chr.xml",
+  "2chronicles": "2Chr.xml",
+  "2chr": "2Chr.xml",
+  "2ch": "2Chr.xml",
+  "2chron": "2Chr.xml",
+
+  // Old Testament - Ezra
+  Ezra: "Ezra.xml",
+  ezra: "Ezra.xml",
+  ez: "Ezra.xml",
+
+  // Old Testament - Nehemiah
+  Nehemiah: "Neh.xml",
+  Neh: "Neh.xml",
+  nehemiah: "Neh.xml",
+  neh: "Neh.xml",
+  ne: "Neh.xml",
+
+  // Old Testament - Esther
+  Esther: "Esth.xml",
+  Esth: "Esth.xml",
+  esther: "Esth.xml",
+  esth: "Esth.xml",
+  es: "Esth.xml",
+
+  // Old Testament - Job
+  Job: "Job.xml",
+  job: "Job.xml",
+  jb: "Job.xml",
+
+  // Old Testament - Psalms
+  Psalms: "Ps.xml",
+  Ps: "Ps.xml",
+  psalms: "Ps.xml",
+  ps: "Ps.xml",
+  psa: "Ps.xml",
+  psalm: "Ps.xml",
+
+  // Old Testament - Proverbs
+  Proverbs: "Prov.xml",
+  Prov: "Prov.xml",
+  proverbs: "Prov.xml",
+  prov: "Prov.xml",
+  pr: "Prov.xml",
+
+  // Old Testament - Ecclesiastes
+  Ecclesiastes: "Eccl.xml",
+  Eccl: "Eccl.xml",
+  ecclesiastes: "Eccl.xml",
+  eccl: "Eccl.xml",
+  ec: "Eccl.xml",
+
+  // Old Testament - Song of Solomon
+  "Song of Solomon": "Song.xml",
+  Song: "Song.xml",
+  "song of solomon": "Song.xml",
+  song: "Song.xml",
+  so: "Song.xml",
+  sos: "Song.xml",
+
+  // Old Testament - Isaiah
+  Isaiah: "Isa.xml",
+  Isa: "Isa.xml",
+  isaiah: "Isa.xml",
+  isa: "Isa.xml",
+  is: "Isa.xml",
+
+  // Old Testament - Jeremiah
+  Jeremiah: "Jer.xml",
+  Jer: "Jer.xml",
+  jeremiah: "Jer.xml",
+  jer: "Jer.xml",
+  je: "Jer.xml",
+
+  // Old Testament - Lamentations
+  Lamentations: "Lam.xml",
+  Lam: "Lam.xml",
+  lamentations: "Lam.xml",
+  lam: "Lam.xml",
+  la: "Lam.xml",
+
+  // Old Testament - Ezekiel
+  Ezekiel: "Ezek.xml",
+  Ezek: "Ezek.xml",
+  ezekiel: "Ezek.xml",
+  ezek: "Ezek.xml",
+  ek: "Ezek.xml",
+
+  // Old Testament - Daniel
+  Daniel: "Dan.xml",
+  Dan: "Dan.xml",
+  daniel: "Dan.xml",
+  dan: "Dan.xml",
+  da: "Dan.xml",
+
+  // Old Testament - Hosea
+  Hosea: "Hos.xml",
+  Hos: "Hos.xml",
+  hosea: "Hos.xml",
+  hos: "Hos.xml",
+  ho: "Hos.xml",
+
+  // Old Testament - Joel
+  Joel: "Joel.xml",
+  joel: "Joel.xml",
+  jl: "Joel.xml",
+
+  // Old Testament - Amos
+  Amos: "Amos.xml",
+  amos: "Amos.xml",
+  am: "Amos.xml",
+
+  // Old Testament - Obadiah
+  Obadiah: "Obad.xml",
+  Obad: "Obad.xml",
+  obadiah: "Obad.xml",
+  obad: "Obad.xml",
+  ob: "Obad.xml",
+
+  // Old Testament - Jonah
+  Jonah: "Jonah.xml",
+  jonah: "Jonah.xml",
+  jon: "Jonah.xml",
+
+  // Old Testament - Micah
+  Micah: "Mic.xml",
+  Mic: "Mic.xml",
+  micah: "Mic.xml",
+  mic: "Mic.xml",
+  mi: "Mic.xml",
+
+  // Old Testament - Nahum
+  Nahum: "Nah.xml",
+  Nah: "Nah.xml",
+  nahum: "Nah.xml",
+  nah: "Nah.xml",
+  na: "Nah.xml",
+
+  // Old Testament - Habakkuk
+  Habakkuk: "Hab.xml",
+  Hab: "Hab.xml",
+  habakkuk: "Hab.xml",
+  hab: "Hab.xml",
+  hb: "Hab.xml",
+
+  // Old Testament - Zephaniah
+  Zephaniah: "Zeph.xml",
+  Zeph: "Zeph.xml",
+  zephaniah: "Zeph.xml",
+  zeph: "Zeph.xml",
+  ze: "Zeph.xml",
+
+  // Old Testament - Haggai
+  Haggai: "Hag.xml",
+  Hag: "Hag.xml",
+  haggai: "Hag.xml",
+  hag: "Hag.xml",
+  hg: "Hag.xml",
+
+  // Old Testament - Zechariah
+  Zechariah: "Zech.xml",
+  Zech: "Zech.xml",
+  zechariah: "Zech.xml",
+  zech: "Zech.xml",
+  zc: "Zech.xml",
+
+  // Old Testament - Malachi
+  Malachi: "Mal.xml",
+  Mal: "Mal.xml",
+  malachi: "Mal.xml",
+  mal: "Mal.xml",
+  ma: "Mal.xml",
+
+  // New Testament - Matthew
+  Matthew: "Matt.xml",
+  Matt: "Matt.xml",
+  matthew: "Matt.xml",
+  matt: "Matt.xml",
+  Mt: "Matt.xml",
+  mt: "Matt.xml",
+
+  // New Testament - Mark
+  Mark: "Mark.xml",
+  mark: "Mark.xml",
+  Mk: "Mark.xml",
+  mk: "Mark.xml",
+
+  // New Testament - Luke
+  Luke: "Luke.xml",
+  luke: "Luke.xml",
+  Lk: "Luke.xml",
+  lk: "Luke.xml",
+
+  // New Testament - John
+  John: "John.xml",
+  john: "John.xml",
+  Jn: "John.xml",
+  jn: "John.xml",
+  jo: "John.xml",
+  joh: "John.xml",
+
+  // New Testament - Acts
+  Acts: "Acts.xml",
+  acts: "Acts.xml",
+  ac: "Acts.xml",
+
+  // New Testament - Romans
+  Romans: "Rom.xml",
+  Rom: "Rom.xml",
+  romans: "Rom.xml",
+  rom: "Rom.xml",
+  ro: "Rom.xml",
+
+  // New Testament - 1 Corinthians
+  "1Corinthians": "1Cor.xml",
+  "1Cor": "1Cor.xml",
+  "1 Corinthians": "1Cor.xml",
+  "1corinthians": "1Cor.xml",
+  "1cor": "1Cor.xml",
+  "1co": "1Cor.xml",
+
+  // New Testament - 2 Corinthians
+  "2Corinthians": "2Cor.xml",
+  "2Cor": "2Cor.xml",
+  "2 Corinthians": "2Cor.xml",
+  "2corinthians": "2Cor.xml",
+  "2cor": "2Cor.xml",
+  "2co": "2Cor.xml",
+
+  // New Testament - Galatians
+  Galatians: "Gal.xml",
+  Gal: "Gal.xml",
+  galatians: "Gal.xml",
+  gal: "Gal.xml",
+  ga: "Gal.xml",
+
+  // New Testament - Ephesians
+  Ephesians: "Eph.xml",
+  Eph: "Eph.xml",
+  ephesians: "Eph.xml",
+  eph: "Eph.xml",
+  ep: "Eph.xml",
+
+  // New Testament - Philippians
+  Philippians: "Phil.xml",
+  Phil: "Phil.xml",
+  philippians: "Phil.xml",
+  phil: "Phil.xml",
+  ph: "Phil.xml",
+  Php: "Phil.xml",
+  php: "Phil.xml",
+
+  // New Testament - Colossians
+  Colossians: "Col.xml",
+  Col: "Col.xml",
+  colossians: "Col.xml",
+  col: "Col.xml",
+  co: "Col.xml",
+
+  // New Testament - 1 Thessalonians
+  "1Thessalonians": "1Thess.xml",
+  "1Thess": "1Thess.xml",
+  "1 Thessalonians": "1Thess.xml",
+  "1thessalonians": "1Thess.xml",
+  "1thess": "1Thess.xml",
+  "1th": "1Thess.xml",
+
+  // New Testament - 2 Thessalonians
+  "2Thessalonians": "2Thess.xml",
+  "2Thess": "2Thess.xml",
+  "2 Thessalonians": "2Thess.xml",
+  "2thessalonians": "2Thess.xml",
+  "2thess": "2Thess.xml",
+  "2th": "2Thess.xml",
+
+  // New Testament - 1 Timothy
+  "1Timothy": "1Tim.xml",
+  "1Tim": "1Tim.xml",
+  "1 Timothy": "1Tim.xml",
+  "1timothy": "1Tim.xml",
+  "1tim": "1Tim.xml",
+  "1ti": "1Tim.xml",
+
+  // New Testament - 2 Timothy
+  "2Timothy": "2Tim.xml",
+  "2Tim": "2Tim.xml",
+  "2 Timothy": "2Tim.xml",
+  "2timothy": "2Tim.xml",
+  "2tim": "2Tim.xml",
+  "2ti": "2Tim.xml",
+
+  // New Testament - Titus
+  Titus: "Titus.xml",
+  titus: "Titus.xml",
+  ti: "Titus.xml",
+  tit: "Titus.xml",
+
+  // New Testament - Philemon
+  Philemon: "Phlm.xml",
+  Phlm: "Phlm.xml",
+  philemon: "Phlm.xml",
+  phlm: "Phlm.xml",
+  Philem: "Phlm.xml",
+  philem: "Phlm.xml",
+  phm: "Phlm.xml",
+
+  // New Testament - Hebrews
+  Hebrews: "Heb.xml",
+  Heb: "Heb.xml",
+  hebrews: "Heb.xml",
+  heb: "Heb.xml",
+  he: "Heb.xml",
+
+  // New Testament - James
+  James: "Jas.xml",
+  Jas: "Jas.xml",
+  james: "Jas.xml",
+  jas: "Jas.xml",
+  ja: "Jas.xml",
+
+  // New Testament - 1 Peter
+  "1Peter": "1Pet.xml",
+  "1Pet": "1Pet.xml",
+  "1 Peter": "1Pet.xml",
+  "1peter": "1Pet.xml",
+  "1pet": "1Pet.xml",
+  "1pe": "1Pet.xml",
+
+  // New Testament - 2 Peter
+  "2Peter": "2Pet.xml",
+  "2Pet": "2Pet.xml",
+  "2 Peter": "2Pet.xml",
+  "2peter": "2Pet.xml",
+  "2pet": "2Pet.xml",
+  "2pe": "2Pet.xml",
+
+  // New Testament - 1 John
+  "1John": "1John.xml",
+  "1 John": "1John.xml",
+  "1john": "1John.xml",
+  "1jo": "1John.xml",
+  "1jn": "1John.xml",
+
+  // New Testament - 2 John
+  "2John": "2John.xml",
+  "2 John": "2John.xml",
+  "2john": "2John.xml",
+  "2jo": "2John.xml",
+  "2jn": "2John.xml",
+
+  // New Testament - 3 John
+  "3John": "3John.xml",
+  "3 John": "3John.xml",
+  "3john": "3John.xml",
+  "3jo": "3John.xml",
+  "3jn": "3John.xml",
+
+  // New Testament - Jude
+  Jude: "Jude.xml",
+  jude: "Jude.xml",
+  jd: "Jude.xml",
+
+  // New Testament - Revelation
+  Revelation: "Rev.xml",
+  Rev: "Rev.xml",
+  revelation: "Rev.xml",
+  rev: "Rev.xml",
+  re: "Rev.xml",
+};
+
 // Updated with provided sample XML
 export const BIBLE_SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <osis xmlns="http://www.bibletechnologies.net/2003/OSIS/namespace" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.bibletechnologies.net/2003/OSIS/namespace http://www.bibletechnologies.net/osisCore.2.1.1.xsd">
