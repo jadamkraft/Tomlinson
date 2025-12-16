@@ -118,10 +118,29 @@ const App: React.FC = () => {
 
   const handleNavigate = useCallback(
     async (book: string, chapter: number, verse: number) => {
-      await handleSearch(`${book} ${chapter}:${verse}`);
+      // book is already an OSIS ID (e.g., "Gen", "1Kgs")
+      const osisID = `${book}.${chapter}.${verse}`;
+      console.log("App: handleNavigate - OSIS ID:", osisID);
+
+      // Ensure the required book is loaded
+      await engine.loadBook(book);
+
+      // Get the verse directly
+      const verseData = engine.getVerse(osisID);
+
+      if (verseData) {
+        setCurrentVerse(verseData);
+        setSelectedWord(null);
+      } else {
+        console.warn("App: Verse not found for OSIS ID:", osisID);
+        alert(
+          `Reference "${book} ${chapter}:${verse}" not found in current dataset.`
+        );
+      }
+
       setIsNavOpen(false);
     },
-    [handleSearch]
+    []
   );
 
   // AGGRESSIVE DEBUG: Log state values before JSX render
