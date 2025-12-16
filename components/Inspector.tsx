@@ -1,7 +1,7 @@
 import React from "react";
 import { VerseWord, ParsedVerse } from "../types";
 import { dictionary } from "../services/DictionaryService";
-import { parseGreekMorphology } from "../utils/morphologyParser";
+import { parseMorphology } from "../utils/morphologyParser";
 import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface InspectorProps {
@@ -88,7 +88,7 @@ const Inspector: React.FC<InspectorProps> = ({
     );
   }
 
-  const morphLabels = parseGreekMorphology(selectedWord.morph);
+  const morphLabels = parseMorphology(selectedWord.morph);
   const lexEntry = dictionary.getDefinition(selectedWord.strongs);
 
   return (
