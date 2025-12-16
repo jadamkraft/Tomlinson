@@ -8,12 +8,16 @@ interface InspectorProps {
   selectedWord: VerseWord | null;
   currentVerse: ParsedVerse | null;
   onNavigate?: (offset: number) => void;
+  canGoNext?: boolean;
+  canGoPrev?: boolean;
 }
 
 const Inspector: React.FC<InspectorProps> = ({
   selectedWord,
   currentVerse,
   onNavigate,
+  canGoNext = true,
+  canGoPrev = true,
 }) => {
   if (!currentVerse) {
     return (
@@ -32,7 +36,12 @@ const Inspector: React.FC<InspectorProps> = ({
               {onNavigate && (
                 <button
                   onClick={() => onNavigate(-1)}
-                  className="p-1.5 text-slate-400 hover:text-sky-400 transition-colors rounded hover:bg-slate-900"
+                  disabled={!canGoPrev}
+                  className={`p-1.5 transition-colors rounded ${
+                    canGoPrev
+                      ? "text-slate-400 hover:text-sky-400 hover:bg-slate-900"
+                      : "text-slate-600 cursor-not-allowed opacity-50"
+                  }`}
                   title="Previous verse"
                 >
                   <ChevronLeft size={18} />
@@ -44,7 +53,12 @@ const Inspector: React.FC<InspectorProps> = ({
               {onNavigate && (
                 <button
                   onClick={() => onNavigate(1)}
-                  className="p-1.5 text-slate-400 hover:text-sky-400 transition-colors rounded hover:bg-slate-900"
+                  disabled={!canGoNext}
+                  className={`p-1.5 transition-colors rounded ${
+                    canGoNext
+                      ? "text-slate-400 hover:text-sky-400 hover:bg-slate-900"
+                      : "text-slate-600 cursor-not-allowed opacity-50"
+                  }`}
                   title="Next verse"
                 >
                   <ChevronRight size={18} />

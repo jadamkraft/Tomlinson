@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Book, X, ChevronLeft } from "lucide-react";
 import { BIBLE_BOOKS, BIBLE_STRUCTURE } from "../constants";
+import { engine } from "../services/BibleEngine";
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const [selectionStep, setSelectionStep] = useState<SelectionStep>("books");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [verseCounts, setVerseCounts] = useState<Record<string, number>>({});
   const drawerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,8 +38,27 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       setSelectionStep("books");
       setSelectedBook(null);
       setSelectedChapter(null);
+      setVerseCounts({});
     }
   }, [isOpen]);
+
+  // Load verse count when chapter is selected
+  useEffect(() => {
+    if (!selectedBook || !selectedChapter || !isOpen) return;
+
+    const key = `${selectedBook}.${selectedChapter}`;
+    if (verseCounts[key]) return; // Already loaded
+
+    const loadVerseCount = async () => {
+      await engine.loadBook(selectedBook);
+      const count = engine.getLastVerseOfChapter(selectedBook, selectedChapter);
+      if (count) {
+        setVerseCounts((prev) => ({ ...prev, [key]: count }));
+      }
+    };
+
+    loadVerseCount();
+  }, [selectedBook, selectedChapter, isOpen, verseCounts]);
 
   // Handle escape key to close drawer
   useEffect(() => {
@@ -153,8 +174,8 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const renderVersesView = () => {
     if (!selectedBook || !selectedChapter) return null;
 
-    // Safe default of 60 verses per chapter
-    const verseCount = 60;
+    const key = `${selectedBook}.${selectedChapter}`;
+    const verseCount = verseCounts[key] || 60; // Fallback to 60 if not loaded yet
 
     return (
       <div className="overflow-y-auto h-[calc(100vh-120px)]">

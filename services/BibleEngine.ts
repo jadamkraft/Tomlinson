@@ -1,8 +1,9 @@
 import { ParsedVerse, VerseWord } from "../types";
 import {
-  BIBLE_SAMPLE_XML,
   SHORT_TO_OSIS,
   BOOK_FILENAME_MAPPING,
+  BIBLE_BOOKS,
+  BIBLE_STRUCTURE,
 } from "../constants";
 
 /**
@@ -66,41 +67,14 @@ export class BibleEngine {
   }
 
   /**
-   * Initializes the engine. For now, it just parses the static sample XML.
+   * Initializes the engine.
    * NOTE: Dictionary parsing logic removed. We now rely on DictionaryService.ts for all definitions.
+   * Books are loaded on-demand via loadBook() which fetches XML files from /assets/.
    */
-  async initialize(xmlString: string = BIBLE_SAMPLE_XML): Promise<void> {
-    try {
-      console.log("BibleEngine: initialize() called");
-      const doc = this.parser.parseFromString(xmlString, "text/xml");
-
-      const parserError = doc.querySelector("parsererror");
-      if (parserError)
-        throw new Error(parserError.textContent || "XML parsing error");
-
-      const books = doc.querySelectorAll('div[type="book"]');
-      books.forEach((bookNode) => {
-        const bookId = bookNode.getAttribute("osisID");
-        if (bookId) {
-          const bookDoc = document.implementation.createDocument(
-            null,
-            "osis",
-            null
-          );
-          bookDoc.documentElement.appendChild(
-            bookDoc.importNode(bookNode, true)
-          );
-          this.bookDocs.set(bookId, bookDoc);
-        }
-      });
-      console.log(
-        "BibleEngine: Initialized. Cached books:",
-        this.bookDocs.size
-      );
-    } catch (error) {
-      console.error("BibleEngine: Initialization failed:", error);
-      throw error;
-    }
+  async initialize(): Promise<void> {
+    console.log("BibleEngine: initialize() called");
+    // Engine state is already initialized in constructor (DOMParser)
+    // No books are pre-loaded - all books must be loaded via loadBook()
   }
 
   /**
@@ -453,6 +427,63 @@ export class BibleEngine {
     }
 
     return targetOsisId;
+  }
+
+  /**
+   * Gets the last verse number in a specific chapter.
+   * @param bookId OSIS book ID (e.g., "Rom")
+   * @param chapter Chapter number
+   * @returns Last verse number or null if chapter not found
+   */
+  public getLastVerseOfChapter(bookId: string, chapter: number): number | null {
+    const doc = this.bookDocs.get(bookId);
+    if (!doc) return null;
+
+    let lastVerse = 0;
+    for (let v = 1; v <= 200; v++) {
+      const testId1 = `${bookId}.${chapter}.${v}`;
+      const testId2 = `${bookId} ${chapter}:${v}`;
+      const verseNode =
+        doc.querySelector(`verse[osisID="${testId1}"]`) ||
+        doc.querySelector(`verse-number[id="${testId2}"]`) ||
+        doc.querySelector(`verse-number[osisID="${testId2}"]`) ||
+        doc.querySelector(`[osisID="${testId1}"]`);
+
+      if (verseNode) {
+        lastVerse = v;
+      } else {
+        break;
+      }
+    }
+
+    return lastVerse > 0 ? lastVerse : null;
+  }
+
+  /**
+   * Gets the last chapter and verse of a book.
+   * @param bookId OSIS book ID (e.g., "Rom")
+   * @returns Object with chapter and verse, or null if book not found
+   */
+  public getLastVerseOfBook(
+    bookId: string
+  ): { chapter: number; verse: number } | null {
+    const doc = this.bookDocs.get(bookId);
+    if (!doc) return null;
+
+    // Get max chapters from BIBLE_STRUCTURE as starting point
+    const fullName = BIBLE_BOOKS[bookId];
+    if (!fullName) return null;
+    const maxChapters = BIBLE_STRUCTURE[fullName]?.chapters || 0;
+
+    // Search backwards from max chapter to find last chapter with verses
+    for (let ch = maxChapters; ch >= 1; ch--) {
+      const lastVerse = this.getLastVerseOfChapter(bookId, ch);
+      if (lastVerse !== null && lastVerse > 0) {
+        return { chapter: ch, verse: lastVerse };
+      }
+    }
+
+    return null;
   }
 }
 

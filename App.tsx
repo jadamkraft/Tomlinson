@@ -6,6 +6,7 @@ import Reader from "./components/Reader";
 import Inspector from "./components/Inspector";
 import CommandBar from "./components/CommandBar";
 import NavigationDrawer from "./components/NavigationDrawer";
+import { useBibleNavigation } from "./hooks/useBibleNavigation";
 import { Book, History } from "lucide-react";
 
 const App: React.FC = () => {
@@ -116,6 +117,10 @@ const App: React.FC = () => {
     setSelectedWord(word);
   }, []);
 
+  const handleDeselectWord = useCallback(() => {
+    setSelectedWord(null);
+  }, []);
+
   const handleNavigate = useCallback(
     async (book: string, chapter: number, verse: number) => {
       // book is already an OSIS ID (e.g., "Gen", "1Kgs")
@@ -141,6 +146,27 @@ const App: React.FC = () => {
       setIsNavOpen(false);
     },
     []
+  );
+
+  // Navigation hook for canon-aware verse navigation
+  const navigation = useBibleNavigation({
+    book: currentVerse?.book || "Gen",
+    chapter: currentVerse?.chapter || 1,
+    verse: currentVerse?.verse || 1,
+  });
+
+  const handleNavigateByOffset = useCallback(
+    async (offset: number) => {
+      if (!currentVerse) return;
+
+      const nextRef =
+        offset > 0 ? navigation.goToNextVerse() : navigation.goToPrevVerse();
+
+      if (nextRef) {
+        await handleNavigate(nextRef.book, nextRef.chapter, nextRef.verse);
+      }
+    },
+    [currentVerse, navigation, handleNavigate]
   );
 
   // AGGRESSIVE DEBUG: Log state values before JSX render
@@ -211,6 +237,7 @@ const App: React.FC = () => {
             verse={currentVerse}
             selectedWord={selectedWord}
             onSelectWord={handleSelectWord}
+            onDeselectWord={handleDeselectWord}
           />
         </section>
 
@@ -219,7 +246,9 @@ const App: React.FC = () => {
           <Inspector
             selectedWord={selectedWord}
             currentVerse={currentVerse}
-            onNavigate={handleNavigate}
+            onNavigate={handleNavigateByOffset}
+            canGoNext={navigation.canGoNext()}
+            canGoPrev={navigation.canGoPrev()}
           />
         </section>
       </main>
