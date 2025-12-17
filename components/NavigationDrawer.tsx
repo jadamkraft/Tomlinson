@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Book, X, ChevronLeft } from "lucide-react";
 import { BIBLE_BOOKS, BIBLE_STRUCTURE } from "../constants";
 import { engine } from "../services/BibleEngine";
+import FeedbackModal from "./FeedbackModal";
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [verseCounts, setVerseCounts] = useState<Record<string, number>>({});
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +41,7 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       setSelectedBook(null);
       setSelectedChapter(null);
       setVerseCounts({});
+      setIsFeedbackOpen(false);
     }
   }, [isOpen]);
 
@@ -62,7 +65,7 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
   // Handle escape key to close drawer
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isFeedbackOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -72,7 +75,7 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, isFeedbackOpen, onClose]);
 
   // Focus search input when drawer opens and we're on books view
   useEffect(() => {
@@ -126,7 +129,7 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   };
 
   const renderBooksView = () => (
-    <div className="overflow-y-auto h-[calc(100vh-120px)]">
+    <div>
       {filteredBooks.length > 0 ? (
         <ul className="p-2">
           {filteredBooks.map(([osisId, fullName]) => (
@@ -155,18 +158,16 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     const chapterCount = BIBLE_STRUCTURE[bookName]?.chapters || 0;
 
     return (
-      <div className="overflow-y-auto h-[calc(100vh-120px)]">
-        <div className="grid grid-cols-6 gap-2 p-4">
-          {Array.from({ length: chapterCount }, (_, i) => i + 1).map((ch) => (
-            <button
-              key={ch}
-              onClick={() => handleChapterClick(ch)}
-              className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded hover:bg-zinc-700 text-slate-200 transition-colors"
-            >
-              {ch}
-            </button>
-          ))}
-        </div>
+      <div className="grid grid-cols-6 gap-2 p-4">
+        {Array.from({ length: chapterCount }, (_, i) => i + 1).map((ch) => (
+          <button
+            key={ch}
+            onClick={() => handleChapterClick(ch)}
+            className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded hover:bg-zinc-700 text-slate-200 transition-colors"
+          >
+            {ch}
+          </button>
+        ))}
       </div>
     );
   };
@@ -178,18 +179,16 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     const verseCount = verseCounts[key] || 60; // Fallback to 60 if not loaded yet
 
     return (
-      <div className="overflow-y-auto h-[calc(100vh-120px)]">
-        <div className="grid grid-cols-6 gap-2 p-4">
-          {Array.from({ length: verseCount }, (_, i) => i + 1).map((verse) => (
-            <button
-              key={verse}
-              onClick={() => handleVerseClick(verse)}
-              className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded hover:bg-zinc-700 text-slate-200 transition-colors"
-            >
-              {verse}
-            </button>
-          ))}
-        </div>
+      <div className="grid grid-cols-6 gap-2 p-4">
+        {Array.from({ length: verseCount }, (_, i) => i + 1).map((verse) => (
+          <button
+            key={verse}
+            onClick={() => handleVerseClick(verse)}
+            className="w-12 h-12 flex items-center justify-center bg-zinc-800 rounded hover:bg-zinc-700 text-slate-200 transition-colors"
+          >
+            {verse}
+          </button>
+        ))}
       </div>
     );
   };
@@ -213,10 +212,10 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         aria-label="Book Navigation"
         className={`fixed inset-y-0 left-0 w-80 md:w-96 bg-zinc-900 border-r border-slate-800 z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } flex flex-col`}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-zinc-900 border-b border-slate-800 p-4 z-10">
+        <div className="bg-zinc-900 border-b border-slate-800 p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               {selectionStep !== "books" && (
@@ -256,10 +255,30 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         </div>
 
         {/* Content Area */}
-        {selectionStep === "books" && renderBooksView()}
-        {selectionStep === "chapters" && renderChaptersView()}
-        {selectionStep === "verses" && renderVersesView()}
+        <div className="flex-1 overflow-y-auto">
+          {selectionStep === "books" && renderBooksView()}
+          {selectionStep === "chapters" && renderChaptersView()}
+          {selectionStep === "verses" && renderVersesView()}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-800 p-4 bg-zinc-900">
+          <button
+            onClick={() => setIsFeedbackOpen(true)}
+            className="w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-left text-sm font-semibold text-slate-200 hover:bg-slate-900 hover:border-slate-700 transition-colors"
+          >
+            Report a Bug / Feedback
+          </button>
+        </div>
       </div>
+
+      {/* Feedback Modal */}
+      {isFeedbackOpen && (
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={() => setIsFeedbackOpen(false)}
+        />
+      )}
     </>
   );
 };
