@@ -6,7 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:guidance": "node scripts/check_guidance.cjs",
+    "check:data": "node scripts/check_text_data.cjs",
+    "build:nt": "node scripts/build_nt_corpus.cjs",
+    "check:nt": "node scripts/build_nt_corpus.cjs --check",
+    "test:e2e": "playwright test",
+    "test:e2e:offline": "playwright test --config playwright.offline.config.ts",
+    "check": "npm run check:guidance && npm run check:data && npm run check:nt && npm run typecheck && npm run test && npm run build"
+  },
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
   },
   "dependencies": {
     "@formspree/react": "^3.0.0",
@@ -15,11 +28,18 @@
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "fast-xml-parser": "^5.11.2",
+    "jsdom": "^26.1.0",
+    "picomatch": "^4.0.7",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.2.0",
-    "workbox-window": "^7.4.0"
+    "vitest": "^5.0.5",
+    "workbox-window": "^7.4.0",
+    "yaml": "^2.9.1"
   }
 }

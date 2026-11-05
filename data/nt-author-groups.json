@@ -1,0 +1,23 @@
+[
+  {
+    "id": "paul7",
+    "label": "Paul: seven-letter comparison",
+    "books": ["Rom", "1Cor", "2Cor", "Gal", "Phil", "1Thess", "Phlm"],
+    "description": "Comparison preset for the seven letters commonly treated as undisputed in Pauline scholarship. This grouping is not an adjudication of authorship.",
+    "sourceUrl": "https://en.wikipedia.org/wiki/Authorship_of_the_Pauline_epistles"
+  },
+  {
+    "id": "paul-extra6",
+    "label": "Paul: additional six-letter comparison",
+    "books": ["Eph", "Col", "2Thess", "1Tim", "2Tim", "Titus"],
+    "description": "Comparison preset for six additional letters bearing Paul's name whose authorship is debated. This grouping neither settles the debate nor assumes a single author for these letters.",
+    "sourceUrl": "https://en.wikipedia.org/wiki/Authorship_of_the_Pauline_epistles"
+  },
+  {
+    "id": "paul13",
+    "label": "Paul: thirteen-letter comparison",
+    "books": ["Rom", "1Cor", "2Cor", "Gal", "Eph", "Phil", "Col", "1Thess", "2Thess", "1Tim", "2Tim", "Titus", "Phlm"],
+    "description": "Comparison preset for all thirteen New Testament letters bearing Paul's name, in canonical order. Hebrews is excluded. Inclusion does not adjudicate authorship.",
+    "sourceUrl": "https://en.wikipedia.org/wiki/Authorship_of_the_Pauline_epistles"
+  }
+]

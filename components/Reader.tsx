@@ -3,13 +3,15 @@ import { ParsedVerse, VerseWord } from "../types";
 
 interface ReaderProps {
   verse: ParsedVerse | null;
+  verses?: ParsedVerse[];
   selectedWord: VerseWord | null;
-  onSelectWord: (word: VerseWord) => void;
+  onSelectWord: (word: VerseWord, verse?: ParsedVerse) => void;
   onDeselectWord?: () => void;
 }
 
 const Reader: React.FC<ReaderProps> = ({
   verse,
+  verses,
   selectedWord,
   onSelectWord,
   onDeselectWord,
@@ -86,21 +88,27 @@ const Reader: React.FC<ReaderProps> = ({
           </h1>
         </header>
 
+        {(verses?.length ? verses : [verse]).map(passage => <div key={passage.osisID} data-reference={passage.osisID} className="mb-4">
+        {verses && verses.length > 1 && <span className="text-xs text-slate-500 mr-2">{passage.verse}</span>}
         <div
           className={`flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-4 sm:gap-y-6 leading-relaxed ${
             isHebrew ? "flex-row-reverse text-right" : "flex-row text-left"
           }`}
           dir={isHebrew ? "rtl" : "ltr"}
         >
-          {verse.words.map((word) => (
+          {passage.words.map((word) => (
             <button
               key={word.id}
+              data-token-id={word.id}
+              aria-label={`Select ${word.text}`}
+              aria-pressed={selectedWord?.id === word.id}
+              lang={word.language || (isHebrew ? "he" : "grc")}
               onClick={(e) => {
                 e.stopPropagation();
-                onSelectWord(word);
+                onSelectWord(word, passage);
               }}
               className={`
-                group relative transition-all duration-200 outline-none
+                group relative transition-all duration-200 focus-visible:ring-2 focus-visible:ring-sky-400 min-h-11
                 ${isHebrew ? "text-3xl sm:text-5xl" : "text-2xl sm:text-4xl"}
                 serif-font p-1 rounded-md
                 ${
@@ -118,7 +126,7 @@ const Reader: React.FC<ReaderProps> = ({
               </span>
             </button>
           ))}
-        </div>
+        </div></div>)}
 
         {/* Decorative footer */}
         <div className="mt-16 lg:mt-24 pt-8 border-t border-slate-900 flex justify-between items-center text-[10px] uppercase tracking-widest text-slate-600">

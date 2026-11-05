@@ -1,10 +1,14 @@
 import { ParsedVerse, VerseWord } from "../types";
+import { NtCorpusService } from "./NtCorpusService";
 import {
   SHORT_TO_OSIS,
   BOOK_FILENAME_MAPPING,
   BIBLE_BOOKS,
   BIBLE_STRUCTURE,
 } from "../constants";
+
+const canonicalBooks = Object.keys(BIBLE_BOOKS);
+const ntBooks = new Set(canonicalBooks.slice(canonicalBooks.indexOf("Matt")));
 
 /**
  * Normalizes a book ID by stripping spaces and handling case-insensitivity.
@@ -17,8 +21,12 @@ export class BibleEngine {
   private parser: DOMParser;
   private bookDocs: Map<string, Document> = new Map();
 
-  constructor() {
+  constructor(private readonly ntCorpus: NtCorpusService = new NtCorpusService()) {
     this.parser = new DOMParser();
+  }
+
+  public getNtManifest() {
+    return this.ntCorpus.getManifest();
   }
 
   private isOT(bookId: string): boolean {
@@ -69,7 +77,7 @@ export class BibleEngine {
   /**
    * Initializes the engine.
    * NOTE: Dictionary parsing logic removed. We now rely on DictionaryService.ts for all definitions.
-   * Books are loaded on-demand via loadBook() which fetches XML files from /assets/.
+  * Books are loaded on-demand via loadBook().
    */
   async initialize(): Promise<void> {
     console.log("BibleEngine: initialize() called");
@@ -78,7 +86,7 @@ export class BibleEngine {
   }
 
   /**
-   * Loads a specific book XML from the assets folder.
+  * Loads canonical NT JSON or an OT XML book from the assets folder.
    */
   public async loadBook(osisBookId: string): Promise<void> {
     if (this.bookDocs.has(osisBookId)) return;
@@ -92,6 +100,14 @@ export class BibleEngine {
     // Throw clear error if filename cannot be resolved
     if (!fileName) {
       throw new Error(`Unknown book alias: ${osisBookId}`);
+    }
+
+    const canonicalBookId = canonicalBooks.find(
+      (bookId) => bookId === fileName.replace(/\.xml$/, "")
+    );
+    if (canonicalBookId && ntBooks.has(canonicalBookId)) {
+      await this.ntCorpus.loadBook(canonicalBookId);
+      return;
     }
 
     const path = `/assets/${fileName}`;
@@ -193,6 +209,9 @@ export class BibleEngine {
       SHORT_TO_OSIS[normalizedBook] ||
       SHORT_TO_OSIS[bookInputLower] ||
       SHORT_TO_OSIS[bookInputLower.replace(/\s+/g, "")] ||
+      Object.keys(BIBLE_BOOKS).find(
+        (bookId) => bookId.toLowerCase() === normalizedBook
+      ) ||
       bookInput.replace(/\s+/g, "").charAt(0).toUpperCase() +
         bookInput.replace(/\s+/g, "").slice(1).toLowerCase();
 
@@ -281,6 +300,7 @@ export class BibleEngine {
 
   public getVerse(osisID: string): ParsedVerse | null {
     const bookId = osisID.split(".")[0];
+    if (ntBooks.has(bookId)) return this.ntCorpus.getVerse(osisID);
     const doc = this.bookDocs.get(bookId);
 
     if (!doc) {
@@ -336,6 +356,17 @@ export class BibleEngine {
     };
   }
 
+  public getChapter(bookId: string, chapter: number): ParsedVerse[] {
+    if (ntBooks.has(bookId)) return this.ntCorpus.getChapter(bookId, chapter);
+    const lastVerse = this.getLastVerseOfChapter(bookId, chapter);
+    const verses: ParsedVerse[] = [];
+    for (let verse = 1; verse <= (lastVerse ?? 0); verse++) {
+      const parsed = this.getVerse(`${bookId}.${chapter}.${verse}`);
+      if (parsed) verses.push(parsed);
+    }
+    return verses;
+  }
+
   /**
    * Gets the adjacent verse ID (next or previous) based on offset.
    * @param currentOsisId Current verse OSIS ID (e.g., "Gen.1.1")
@@ -350,6 +381,9 @@ export class BibleEngine {
     if (parts.length !== 3) return null;
 
     const bookId = parts[0];
+    if (ntBooks.has(bookId)) {
+      return this.ntCorpus.getAdjacentVerse(currentOsisId, offset);
+    }
     let chapter = parseInt(parts[1]);
     let verse = parseInt(parts[2]);
 
@@ -436,6 +470,9 @@ export class BibleEngine {
    * @returns Last verse number or null if chapter not found
    */
   public getLastVerseOfChapter(bookId: string, chapter: number): number | null {
+    if (ntBooks.has(bookId)) {
+      return this.ntCorpus.getLastVerseOfChapter(bookId, chapter);
+    }
     const doc = this.bookDocs.get(bookId);
     if (!doc) return null;
 
@@ -467,6 +504,7 @@ export class BibleEngine {
   public getLastVerseOfBook(
     bookId: string
   ): { chapter: number; verse: number } | null {
+    if (ntBooks.has(bookId)) return this.ntCorpus.getLastVerseOfBook(bookId);
     const doc = this.bookDocs.get(bookId);
     if (!doc) return null;
 

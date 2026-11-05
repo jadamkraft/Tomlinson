@@ -22,6 +22,8 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [verseCounts, setVerseCounts] = useState<Record<string, number>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -60,8 +62,13 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       }
     };
 
-    loadVerseCount();
-  }, [selectedBook, selectedChapter, isOpen, verseCounts]);
+    let active = true;
+    setLoadError(null);
+    void loadVerseCount().catch(error => {
+      if (active) setLoadError(error instanceof Error ? error.message : "Unable to load book.");
+    });
+    return () => { active = false; };
+  }, [selectedBook, selectedChapter, isOpen, verseCounts, loadAttempt]);
 
   // Handle escape key to close drawer
   useEffect(() => {
@@ -176,11 +183,15 @@ const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     if (!selectedBook || !selectedChapter) return null;
 
     const key = `${selectedBook}.${selectedChapter}`;
-    const verseCount = verseCounts[key] || 60; // Fallback to 60 if not loaded yet
+    const verseCount = verseCounts[key];
+    if (loadError) return <div className="p-4" role="alert"><p>{loadError}</p><button className="min-h-11 underline" onClick={() => setLoadAttempt(value => value + 1)}>Retry book</button></div>;
+    if (!verseCount) return <p className="p-4" role="status">Loading verses…</p>;
+    const sourceVerses = engine.getChapter(selectedBook, selectedChapter);
+    const verses = sourceVerses.length ? sourceVerses.map(passage => passage.verse) : Array.from({ length: verseCount }, (_, index) => index + 1);
 
     return (
       <div className="grid grid-cols-6 gap-2 p-4">
-        {Array.from({ length: verseCount }, (_, i) => i + 1).map((verse) => (
+        {verses.map((verse) => (
           <button
             key={verse}
             onClick={() => handleVerseClick(verse)}

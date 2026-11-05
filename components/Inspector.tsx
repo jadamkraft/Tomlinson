@@ -2,7 +2,7 @@ import React from "react";
 import { VerseWord, ParsedVerse } from "../types";
 import { dictionary } from "../services/DictionaryService";
 import { parseMorphology } from "../utils/morphologyParser";
-import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 interface InspectorProps {
   selectedWord: VerseWord | null;
@@ -10,6 +10,7 @@ interface InspectorProps {
   onNavigate?: (offset: number) => void;
   canGoNext?: boolean;
   canGoPrev?: boolean;
+  onResearch?: () => void;
 }
 
 const Inspector: React.FC<InspectorProps> = ({
@@ -18,6 +19,7 @@ const Inspector: React.FC<InspectorProps> = ({
   onNavigate,
   canGoNext = true,
   canGoPrev = true,
+  onResearch,
 }) => {
   if (!currentVerse) {
     return (
@@ -90,6 +92,7 @@ const Inspector: React.FC<InspectorProps> = ({
 
   const morphLabels = parseMorphology(selectedWord.morph);
   const lexEntry = dictionary.getDefinition(selectedWord.strongs);
+  const posNames: Record<string, string> = { "N-": "Noun", "V-": "Verb", "A-": "Adjective", "P-": "Preposition", "C-": "Conjunction", "D-": "Adverb", "I-": "Interjection", "X-": "Particle", RA: "Definite article", RD: "Demonstrative pronoun", RI: "Interrogative/indefinite pronoun", RP: "Personal pronoun", RR: "Relative pronoun" };
 
   return (
     <div className="h-full p-6 flex flex-col space-y-8 overflow-y-auto">
@@ -101,9 +104,12 @@ const Inspector: React.FC<InspectorProps> = ({
         >
           {selectedWord.text}
         </h2>
-        <p className="text-sky-400 font-medium tracking-wide uppercase text-xs">
-          Lemma: {selectedWord.lemma}
+        <p className="text-sky-400 font-medium text-sm" lang={selectedWord.language === "grc" ? "grc" : undefined}>
+          {selectedWord.language === "grc" ? `Lemma: ${selectedWord.lexicalLemma || "Unavailable"}` : `Source lexical tag: ${selectedWord.lemma}`}
         </p>
+        {selectedWord.pos && <p className="text-sm text-slate-300 mt-2">{posNames[selectedWord.pos] || selectedWord.pos}</p>}
+        {selectedWord.normalizedWord && <p className="text-sm text-slate-400 mt-1">Normalized: <span lang="grc">{selectedWord.normalizedWord}</span></p>}
+        {selectedWord.lexicalLemma && onResearch && <button className="mt-3 min-h-11 px-3 bg-sky-700 hover:bg-sky-600 rounded flex gap-2 items-center" onClick={onResearch}><Search size={16} />Research word</button>}
       </div>
 
       <div className="grid gap-6">
@@ -116,7 +122,7 @@ const Inspector: React.FC<InspectorProps> = ({
             </label>
           </div>
           <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 shadow-inner">
-            {lexEntry ? (
+            {lexEntry?.word && lexEntry.def ? (
               <>
                 <p
                   className={`text-xl serif-font text-sky-300 font-bold mb-2 ${
@@ -133,7 +139,7 @@ const Inspector: React.FC<InspectorProps> = ({
               </>
             ) : (
               <p className="text-slate-500 text-sm italic">
-                Lexical entry not found for {selectedWord.strongs}.
+                {selectedWord.language === "grc" ? "No verified dictionary linkage in this corpus." : `Lexical entry not found for ${selectedWord.strongs}.`}
               </p>
             )}
           </div>

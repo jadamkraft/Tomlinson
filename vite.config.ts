@@ -36,8 +36,13 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,xml}"],
+          globIgnores: ["assets/nt/**"],
           maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB to accommodate large XML files
           runtimeCaching: [
+            {
+              urlPattern: /\/assets\/nt\/manifest\.json$/i,
+              handler: "NetworkOnly",
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: "CacheFirst",

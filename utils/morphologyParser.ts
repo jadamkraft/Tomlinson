@@ -1,6 +1,6 @@
 /**
  * Parses morphology codes into human-readable labels.
- * Supports both Greek (Robinson-Pierpont) and Hebrew (OSHM) codes.
+ * Supports both Greek (MorphGNT) and Hebrew (OSHM) codes.
  */
 
 // Greek parsing constants
@@ -29,7 +29,7 @@ const MOOD_MAP: Record<string, string> = {
   I: "Indicative",
   S: "Subjunctive",
   O: "Optative",
-  M: "Imperative",
+  D: "Imperative",
   N: "Infinitive",
   P: "Participle",
 };
@@ -116,7 +116,7 @@ const HEBREW_POS_MAP: Record<string, string> = {
 };
 
 /**
- * Parses a Robinson-Pierpont morphology code into an array of human-readable labels.
+ * Parses a MorphGNT morphology code into an array of human-readable labels.
  *
  * @param code - The morphology code (e.g., "3IAI-S--", "----DSF-")
  * @returns Array of human-readable labels (e.g., ["3rd Person", "Imperfect", "Active", "Indicative", "Singular"])
@@ -139,7 +139,7 @@ export function parseGreekMorphology(code: string): string[] {
   const isVerb = /^[123-][PIFAXY]/.test(trimmed) || /^-[PIFAXY]/.test(trimmed);
 
   if (isVerb) {
-    // Parse verb format: positions 1-7
+    // Parse verb format: positions 1-8
     // Position 1: Person (1, 2, 3, or -)
     if (trimmed[0] && trimmed[0] !== "-") {
       const person = PERSON_MAP[trimmed[0]];
@@ -164,7 +164,7 @@ export function parseGreekMorphology(code: string): string[] {
       }
     }
 
-    // Position 4: Mood (I, S, O, M, N, P, or -)
+    // Position 4: Mood (I, S, O, D, N, P, or -)
     if (trimmed[3] && trimmed[3] !== "-") {
       const mood = MOOD_MAP[trimmed[3]];
       if (mood) {
@@ -221,6 +221,9 @@ export function parseGreekMorphology(code: string): string[] {
       }
     }
   }
+
+  const degree = { C: "Comparative", S: "Superlative" }[trimmed[7]];
+  if (degree) labels.push(degree);
 
   return labels;
 }

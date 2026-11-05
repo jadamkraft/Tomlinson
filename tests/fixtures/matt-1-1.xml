@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Matt.1.1 copied from generated public/assets/Matt.xml; enclosing structure reduced.
+     SBLGNT, Michael W. Holmes, 2010 Logos Bible Software / Society of Biblical Literature.
+     Text license reference: http://sblgnt.com/license/
+     MorphGNT SBLGNT Edition 6.12, Tauber (ed.), 2017, CC BY-SA 3.0 annotation:
+     https://doi.org/10.5281/zenodo.376200 (see sblgnt/README.md).
+     Generated lemma attributes are existing Strong's links, not lexical lemmas. -->
+<osis>
+<osisText xml:lang="grc" osisIDWork="SBLGNT">
+<div type="book" osisID="Matt">
+<chapter osisID="Matt.1">
+<verse osisID="Matt.1.1"><w lemma="G976" morph="----NSF-">Βίβλος</w> <w lemma="G1078" morph="----GSF-">γενέσεως</w> <w lemma="G2424" morph="----GSM-">Ἰησοῦ</w> <w lemma="G5547" morph="----GSM-">χριστοῦ</w> <w lemma="G5207" morph="----GSM-">υἱοῦ</w> <w lemma="" morph="----GSM-">Δαυὶδ</w> <w lemma="G5207" morph="----GSM-">υἱοῦ</w> <w lemma="G11" morph="----GSM-">Ἀβραάμ.</w> </verse>
+</chapter>
+</div>
+</osisText>
+</osis>

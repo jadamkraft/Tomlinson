@@ -43,7 +43,13 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const hasErrors = state.errors && state.errors.length > 0;
+  const submissionErrors = state.errors
+    ? [
+        ...state.errors.getFormErrors(),
+        ...state.errors.getAllFieldErrors().flatMap(([, errors]) => errors),
+      ]
+    : [];
+  const hasErrors = submissionErrors.length > 0;
 
   return (
     <div className="fixed inset-0 z-[60]">
@@ -117,8 +123,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
                       Couldn’t send your message.
                     </p>
                     <ul className="mt-2 space-y-1 text-sm text-rose-200/90">
-                      {state.errors?.map((err, idx) => (
-                        <li key={`${err.field ?? "form"}-${idx}`}>
+                      {submissionErrors.map((err, idx) => (
+                        <li key={`${err.code}-${idx}`}>
                           {err.message}
                         </li>
                       ))}

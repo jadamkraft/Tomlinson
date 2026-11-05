@@ -1,267 +1,211 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { engine } from "./services/BibleEngine";
 import { dictionary } from "./services/DictionaryService";
-import { ParsedVerse, VerseWord, EngineStatus } from "./types";
+import { ParsedVerse, VerseWord, NtManifest, WordContextHit, WordContextQuery } from "./types";
 import Reader from "./components/Reader";
 import Inspector from "./components/Inspector";
 import CommandBar from "./components/CommandBar";
 import NavigationDrawer from "./components/NavigationDrawer";
+import WordResearchPanel from "./components/WordResearchPanel";
 import { useBibleNavigation } from "./hooks/useBibleNavigation";
-import { Book, History } from "lucide-react";
+import { useWordResearch } from "./hooks/useWordResearch";
+import { ArrowLeft, Book } from "lucide-react";
+
+type ResearchSnapshot = { query: WordContextQuery; target: VerseWord; origin: { reference: string; token?: string; scroll: number }; scroll: number; focus: string | null };
+type LocationState = { view: "reading" | "research"; reference: string; token?: string; lastOfBook?: boolean; readingScroll?: number; investigation?: ResearchSnapshot };
+
+function readLocation(): LocationState {
+  const params = new URLSearchParams(location.hash.slice(1));
+  return {
+    reference: params.get("ref") || "Rom.8.9",
+    token: params.get("token") || undefined,
+    view: params.get("view") === "research" ? "research" : "reading",
+    readingScroll: history.state?.readingScroll,
+    investigation: history.state?.investigation,
+  };
+}
 
 const App: React.FC = () => {
-  console.log("🚀 App Mounting");
-
-  const [status, setStatus] = useState<EngineStatus>(EngineStatus.IDLE);
   const [currentVerse, setCurrentVerse] = useState<ParsedVerse | null>(null);
+  const [chapter, setChapter] = useState<ParsedVerse[]>([]);
   const [selectedWord, setSelectedWord] = useState<VerseWord | null>(null);
+  const [manifest, setManifest] = useState<NtManifest | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"reading" | "research">("reading");
   const [isNavOpen, setIsNavOpen] = useState(false);
-
-  console.log(
-    "App: Render - status:",
-    status,
-    "currentVerse:",
-    currentVerse,
-    "selectedWord:",
-    selectedWord
-  );
-
-  const handleSearch = useCallback(async (query: string) => {
-    console.log("App: handleSearch called with query:", query);
-    const osisID = engine.parseReference(query);
-    console.log("App: Parsed OSIS ID:", osisID);
-    const bookId = osisID.split(".")[0];
-    console.log("App: Extracted book ID:", bookId);
-
-    // Ensure the required book is loaded
-    console.log("App: Loading book:", bookId);
-    await engine.loadBook(bookId);
-    console.log("App: Book load completed for:", bookId);
-
-    console.log("App: Getting verse for OSIS ID:", osisID);
-    const verse = engine.getVerse(osisID);
-    console.log("App: getVerse returned:", verse);
-    console.log(
-      "App: Verse is null/undefined?",
-      verse === null || verse === undefined
-    );
-
-    if (verse) {
-      console.log(
-        "App: Verse found, currentVerse BEFORE setCurrentVerse:",
-        currentVerse
-      );
-      console.log("App: Verse data:", {
-        osisID: verse.osisID,
-        book: verse.book,
-        chapter: verse.chapter,
-        verse: verse.verse,
-        wordCount: verse.words?.length || 0,
-      });
-      setCurrentVerse(verse);
-      console.log(
-        "App: setCurrentVerse called, currentVerse AFTER (may not update immediately):",
-        currentVerse
-      );
-      setSelectedWord(null);
-      console.log("App: setSelectedWord(null) called");
-    } else {
-      console.warn(
-        "App: Verse not found for query:",
-        query,
-        "OSIS ID:",
-        osisID
-      );
-      alert(`Reference "${query}" not found in current dataset.`);
-    }
-  }, []);
-
-  // Initialize engine on mount
-  useEffect(() => {
-    console.log("🔥 App: useEffect FIRED - initialization starting");
-
-    const init = async () => {
-      console.log("App: Starting initialization...");
-      console.log("App: Setting status to LOADING");
-      setStatus(EngineStatus.LOADING);
-      console.log(
-        "App: Status after setStatus(LOADING):",
-        EngineStatus.LOADING
-      );
-
-      try {
-        console.log("App: Starting engine and dictionary initialization...");
-        // Initialize both core services
-        await Promise.all([engine.initialize(), dictionary.initialize()]);
-
-        console.log("App: Both services initialized successfully");
-        console.log("App: Setting status to READY");
-        setStatus(EngineStatus.READY);
-        console.log("App: Status after setStatus(READY):", EngineStatus.READY);
-
-        // Load initial verse
-        console.log("App: Loading initial verse Gen 1:1...");
-        await handleSearch("Gen 1:1");
-        console.log("App: Initial verse search completed");
-      } catch (err) {
-        console.error("App: Boot error:", err);
-        console.log("App: Setting status to ERROR");
-        setStatus(EngineStatus.ERROR);
-        console.log("App: Status after setStatus(ERROR):", EngineStatus.ERROR);
-      }
-    };
-    init();
-  }, [handleSearch]);
-
-  const handleSelectWord = useCallback((word: VerseWord) => {
-    setSelectedWord(word);
-  }, []);
-
-  const handleDeselectWord = useCallback(() => {
-    setSelectedWord(null);
-  }, []);
-
-  const handleNavigate = useCallback(
-    async (book: string, chapter: number, verse: number) => {
-      // book is already an OSIS ID (e.g., "Gen", "1Kgs")
-      const osisID = `${book}.${chapter}.${verse}`;
-      console.log("App: handleNavigate - OSIS ID:", osisID);
-
-      // Ensure the required book is loaded
-      await engine.loadBook(book);
-
-      // Get the verse directly
-      const verseData = engine.getVerse(osisID);
-
-      if (verseData) {
-        setCurrentVerse(verseData);
-        setSelectedWord(null);
-      } else {
-        console.warn("App: Verse not found for OSIS ID:", osisID);
-        alert(
-          `Reference "${book} ${chapter}:${verse}" not found in current dataset.`
-        );
-      }
-
-      setIsNavOpen(false);
-    },
-    []
-  );
-
-  // Navigation hook for canon-aware verse navigation
+  const requestId = useRef(0);
+  const pendingLocation = useRef<LocationState>(readLocation());
+  const pendingHistoryMode = useRef<"push" | "replace" | "none">("replace");
+  const origin = useRef<{ reference: string; token?: string; scroll: number } | null>(null);
+  const readerContainer = useRef<HTMLDivElement>(null);
+  const researchContainer = useRef<HTMLDivElement>(null);
+  const researchScroll = useRef(0);
+  const resultFocus = useRef<string | null>(null);
+  const research = useWordResearch();
   const navigation = useBibleNavigation({
-    book: currentVerse?.book || "Gen",
-    chapter: currentVerse?.chapter || 1,
-    verse: currentVerse?.verse || 1,
+    book: currentVerse?.book || "Rom",
+    chapter: currentVerse?.chapter || 8,
+    verse: currentVerse?.verse || 9,
   });
 
-  const handleNavigateByOffset = useCallback(
-    async (offset: number) => {
-      if (!currentVerse) return;
-
-      const nextRef =
-        offset > 0 ? navigation.goToNextVerse() : navigation.goToPrevVerse();
-
-      if (nextRef) {
-        await handleNavigate(nextRef.book, nextRef.chapter, nextRef.verse);
+  const navigate = async (target: LocationState, historyMode: "push" | "replace" | "none" = "push") => {
+    const request = ++requestId.current;
+    pendingLocation.current = target;
+    pendingHistoryMode.current = historyMode;
+    setStatus("loading");
+    setError(null);
+    try {
+      if (!/^[1-3]?[A-Za-z]+\.\d+\.\d+$/.test(target.reference)) {
+        throw new Error("Enter a valid book, chapter, and verse.");
       }
-    },
-    [currentVerse, navigation, handleNavigate]
-  );
+      const book = target.reference.split(".")[0];
+      await engine.loadBook(book);
+      const last = target.lastOfBook ? engine.getLastVerseOfBook(book) : null;
+      const reference = last ? `${book}.${last.chapter}.${last.verse}` : target.reference;
+      const verse = engine.getVerse(reference);
+      if (!verse) throw new Error(`Reference ${target.reference} is not present in this source edition.`);
+      const isGreek = verse.words[0]?.language === "grc";
+      const source = isGreek ? await engine.getNtManifest() : null;
+      if (request !== requestId.current) return;
+      setManifest(source);
+      setCurrentVerse(verse);
+      setChapter(isGreek ? engine.getChapter(book, verse.chapter) : [verse]);
+      setSelectedWord(target.token ? verse.words.find(word => word.id === target.token) || null : null);
+      setView(target.view);
+      setStatus("ready");
+      setIsNavOpen(false);
+      if (historyMode !== "none") {
+        const hash = new URLSearchParams({ ref: verse.osisID });
+        if (target.token) hash.set("token", target.token);
+        if (target.view === "research") hash.set("view", "research");
+        window.history[historyMode === "push" ? "pushState" : "replaceState"](target, "", `#${hash}`);
+      }
+      if (!isGreek) void dictionary.initialize();
+      requestAnimationFrame(() => {
+        if (request !== requestId.current || target.view !== "reading") return;
+        const root = readerContainer.current;
+        const token = target.token && root?.querySelector<HTMLButtonElement>(`[data-token-id="${CSS.escape(target.token)}"]`);
+        const anchor = token || root?.querySelector(`[data-reference="${verse.osisID}"]`);
+        anchor?.scrollIntoView({ block: "center" });
+        if (token) token.focus({ preventScroll: true });
+        if (root && target.readingScroll !== undefined) root.scrollTop = target.readingScroll;
+      });
+    } catch (failure) {
+      if (request !== requestId.current) return;
+      setStatus("error");
+      setError(failure instanceof Error ? failure.message : "Unable to load passage.");
+    }
+  };
 
-  // AGGRESSIVE DEBUG: Log state values before JSX render
-  console.log(
-    "🔍 App: Pre-render state check - status:",
-    status,
-    "currentVerse:",
-    currentVerse
-  );
-  console.log("🔍 App: status === LOADING?", status === EngineStatus.LOADING);
-  console.log("🔍 App: status === READY?", status === EngineStatus.READY);
-  console.log("🔍 App: status === ERROR?", status === EngineStatus.ERROR);
-  console.log("🔍 App: currentVerse is null?", currentVerse === null);
-  console.log("🔍 App: currentVerse is undefined?", currentVerse === undefined);
+  useEffect(() => {
+    const restoreLocation = (mode: "replace" | "none") => {
+      const target = readLocation();
+      if (target.investigation) {
+        const saved = target.investigation;
+        research.restore(saved.query, saved.target);
+        origin.current = saved.origin;
+        researchScroll.current = saved.scroll;
+        resultFocus.current = saved.focus;
+      } else if (target.view === "research") target.view = "reading";
+      void navigate(target, mode);
+    };
+    restoreLocation("replace");
+    const onPopState = () => { restoreLocation("none"); };
+    window.addEventListener("popstate", onPopState);
+    return () => { ++requestId.current; window.removeEventListener("popstate", onPopState); };
+  }, []);
+
+  useEffect(() => {
+    if (view !== "research") return;
+    requestAnimationFrame(() => {
+      if (researchContainer.current) researchContainer.current.scrollTop = researchScroll.current;
+      const focused = resultFocus.current && researchContainer.current?.querySelector<HTMLButtonElement>(`[data-result-id="${CSS.escape(resultFocus.current)}"]`);
+      focused?.focus({ preventScroll: true });
+    });
+  }, [view, research.status]);
+
+  const snapshot = (): ResearchSnapshot | undefined => research.query && research.target && origin.current
+    ? { query: research.query, target: research.target, origin: origin.current, scroll: researchContainer.current?.scrollTop ?? researchScroll.current, focus: resultFocus.current }
+    : undefined;
+
+  useEffect(() => {
+    if (view === "research" && research.query) history.replaceState({ ...history.state, investigation: snapshot() }, "");
+  }, [research.query, view]);
+
+  const startResearch = () => {
+    if (!selectedWord?.lexicalLemma || !currentVerse) return;
+    const previousInvestigation = snapshot();
+    origin.current = { reference: currentVerse.osisID, token: selectedWord.id, scroll: readerContainer.current?.scrollTop || 0 };
+    const readingHash = new URLSearchParams({ ref: currentVerse.osisID, token: selectedWord.id });
+    history.replaceState({ view: "reading", reference: currentVerse.osisID, token: selectedWord.id, readingScroll: origin.current.scroll, investigation: previousInvestigation }, "", `#${readingHash}`);
+    researchScroll.current = 0;
+    resultFocus.current = null;
+    research.start(selectedWord, currentVerse.book);
+    setView("research");
+    const target: LocationState = { view: "research", reference: currentVerse.osisID, token: selectedWord.id };
+    const hash = new URLSearchParams({ ref: target.reference, token: selectedWord.id, view: "research" });
+    history.pushState(target, "", `#${hash}`);
+  };
+
+  const openHit = (hit: WordContextHit) => {
+    researchScroll.current = researchContainer.current?.scrollTop || 0;
+    resultFocus.current = hit.target.id;
+    const saved = snapshot();
+    history.replaceState({ ...history.state, investigation: saved }, "");
+    void navigate({ view: "reading", reference: hit.target.reference, token: hit.target.id, investigation: saved });
+  };
+
+  const returnToOrigin = async () => {
+    const saved = origin.current;
+    if (!saved) { setView("reading"); return; }
+    researchScroll.current = researchContainer.current?.scrollTop ?? researchScroll.current;
+    const savedInvestigation = snapshot();
+    history.replaceState({ ...history.state, investigation: savedInvestigation }, "");
+    await navigate({ view: "reading", reference: saved.reference, token: saved.token, investigation: savedInvestigation });
+    requestAnimationFrame(() => { if (readerContainer.current) readerContainer.current.scrollTop = saved.scroll; });
+  };
+
+  const moveVerse = (offset: number) => {
+    const next = offset > 0 ? navigation.goToNextVerse() : navigation.goToPrevVerse();
+    if (!next) return;
+    const previousBook = offset < 0 && currentVerse?.book !== next.book;
+    void navigate({ view: "reading", reference: `${next.book}.${next.chapter}.${next.verse}`, lastOfBook: previousBook });
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-950 overflow-hidden">
-      {/* Top Header */}
-      <header className="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 bg-slate-950/80 backdrop-blur-md z-20">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsNavOpen(true)}
-            className="bg-sky-600 p-1.5 rounded text-white hover:bg-sky-500 transition-colors cursor-pointer"
-            aria-label="Open book navigation"
-          >
-            <Book size={18} />
-          </button>
-          <span className="font-bold tracking-tight text-slate-200">
-            Tomlinson <span className="text-sky-500">10</span>
-          </span>
+    <div className="flex flex-col h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden">
+      <header className="h-14 border-b border-slate-800 flex items-center justify-between px-3 shrink-0">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setIsNavOpen(true)} className="p-3 text-sky-400" aria-label="Open book navigation" title="Open book navigation"><Book size={20} /></button>
+          <span className="font-bold">Tomlinson <span className="text-sky-400">Research</span></span>
         </div>
-
-        <div className="flex items-center gap-4 text-slate-500">
-          <button
-            title="History"
-            className="hover:text-slate-100 transition-colors"
-          >
-            <History size={18} />
-          </button>
-          <div className="w-px h-6 bg-slate-800 mx-2" />
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                status === EngineStatus.READY
-                  ? "bg-emerald-500"
-                  : "bg-amber-500 animate-pulse"
-              }`}
-            />
-            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
-              {status}
-            </span>
-          </div>
-        </div>
+        <span className="text-xs text-slate-400" role="status">{status === "loading" ? "Loading passage…" : status === "error" ? "Load failed" : "Ready"}</span>
       </header>
-
-      {/* Main Content Area - Responsive Stack */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Desktop Mini-Sidebar */}
-        <aside className="hidden lg:flex w-14 border-r border-slate-800 flex-col items-center py-6 gap-8 bg-slate-950 shrink-0">
-          <button className="p-2 text-sky-400 hover:bg-slate-900 rounded-lg transition-colors">
-            <Book size={20} />
-          </button>
-        </aside>
-
-        {/* Reader Zone (A) */}
-        <section className="flex-1 bg-slate-900/20 flex flex-col min-w-0 h-1/2 lg:h-full">
-          <Reader
-            verse={currentVerse}
-            selectedWord={selectedWord}
-            onSelectWord={handleSelectWord}
-            onDeselectWord={handleDeselectWord}
-          />
-        </section>
-
-        {/* Inspector Zone (B) - Stacks on bottom for mobile */}
-        <section className="h-1/2 lg:h-full w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-950 shrink-0 flex flex-col overflow-hidden">
-          <Inspector
-            selectedWord={selectedWord}
-            currentVerse={currentVerse}
-            onNavigate={handleNavigateByOffset}
-            canGoNext={navigation.canGoNext()}
-            canGoPrev={navigation.canGoPrev()}
-          />
-        </section>
+      {error && <div role="alert" className="p-3 border-b border-rose-900 bg-rose-950/30 text-sm flex gap-2 items-center"><span className="flex-1">{error}</span><button className="min-h-11 px-3 underline" onClick={() => void navigate(pendingLocation.current, pendingHistoryMode.current)}>Retry passage</button></div>}
+      {research.query && view === "reading" && <div className="border-b border-slate-800 px-3 flex shrink-0"><button className="min-h-11 flex items-center gap-2 text-sm text-sky-300" onClick={() => {
+        setView("research");
+        const target: LocationState = { view: "research", reference: currentVerse?.osisID || "Rom.8.9", investigation: snapshot() };
+        history.pushState(target, "", `#${new URLSearchParams({ ref: target.reference, view: "research" })}`);
+      }}><ArrowLeft size={16} />Back to results</button></div>}
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+        <div ref={readerContainer} className={`${view === "research" ? "hidden lg:block" : "block"} flex-1 min-h-0 min-w-0 overflow-y-auto`}>
+          {currentVerse ? <Reader verse={currentVerse} verses={chapter} selectedWord={selectedWord} onSelectWord={(word, verse) => { setSelectedWord(word); if (verse) setCurrentVerse(verse); }} onDeselectWord={() => setSelectedWord(null)} /> : <p className="p-6 text-slate-400">{status === "loading" ? "Loading Greek text…" : "No passage loaded."}</p>}
+        </div>
+        {view === "research" && research.query ? <div ref={researchContainer} className="flex-1 lg:flex-none lg:w-[32rem] min-h-0 min-w-0 overflow-y-auto border-l border-slate-800">
+          <WordResearchPanel research={research} book={origin.current?.reference.split(".")[0] || "Rom"} onOpen={openHit} onClose={() => void returnToOrigin()} />
+        </div> : <section className={`${selectedWord ? "max-h-[45dvh] lg:max-h-none" : "hidden lg:flex"} lg:w-80 shrink-0 min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l border-slate-800`}>
+          <Inspector selectedWord={selectedWord} currentVerse={currentVerse} onResearch={startResearch} onNavigate={offset => void moveVerse(offset)} canGoNext={navigation.canGoNext()} canGoPrev={navigation.canGoPrev()} />
+        </section>}
       </main>
-
-      {/* Footer / Command Bar */}
-      <CommandBar onSearch={handleSearch} />
-
-      {/* Navigation Drawer */}
-      <NavigationDrawer
-        isOpen={isNavOpen}
-        onClose={() => setIsNavOpen(false)}
-        onNavigate={handleNavigate}
-      />
+      {view === "reading" && currentVerse && <nav aria-label="Passage navigation" className="shrink-0 flex justify-between border-t border-slate-800 px-3 text-sm">
+        <button className="min-h-11 px-3 disabled:opacity-30" disabled={!navigation.canGoPrev()} onClick={() => void moveVerse(-1)} aria-label="Previous verse">Previous</button>
+        <span className="self-center text-slate-400">{currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}</span>
+        <button className="min-h-11 px-3 disabled:opacity-30" disabled={!navigation.canGoNext()} onClick={() => void moveVerse(1)} aria-label="Next verse">Next</button>
+      </nav>}
+      {view === "reading" && <CommandBar onSearch={query => void navigate({ view: "reading", reference: engine.parseReference(query) })} />}
+      {manifest && <footer className="shrink-0 border-t border-slate-800 text-[11px] text-slate-400 px-3 py-1"><details><summary className="cursor-pointer min-h-6">SBLGNT · MorphGNT · Source and coverage</summary><div className="max-h-32 overflow-y-auto py-2 space-y-1">{manifest.notices.map(notice => <p key={notice.url}><a href={notice.url} target="_blank" rel="noreferrer" className="underline">{notice.label}</a></p>)}{manifest.coverageNotes.map(note => <p key={note}>{note}</p>)}<p className="break-all">{manifest.corpusId}</p></div></details></footer>}
+      <NavigationDrawer isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} onNavigate={(book, chapterNumber, verse) => void navigate({ view: "reading", reference: `${book}.${chapterNumber}.${verse}` })} />
     </div>
   );
 };

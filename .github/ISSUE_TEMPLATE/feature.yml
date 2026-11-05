@@ -1,0 +1,57 @@
+name: "Study-driven feature"
+description: "Propose a bounded original-language study improvement with passage-based acceptance and explicit impacts."
+title: "[Study]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Build for the owner's personally useful study and freely accessible use.
+        Follow [principles](https://github.com/jadamkraft/Tomlinson/blob/main/docs/PROJECT_PRINCIPLES.md),
+        [text-first interpretation](https://github.com/jadamkraft/Tomlinson/blob/main/docs/INTERPRETIVE_METHOD.md), and
+        [contribution guidance](https://github.com/jadamkraft/Tomlinson/blob/main/CONTRIBUTING.md).
+        Investigate language, context, and original-audience/first-century evidence
+        before systematic conclusions. Historical `.cursor/plans/` are not approval.
+        This proposal does not authorize runtime AI, billing, new corpora, or deployment.
+  - type: textarea
+    id: study-need
+    attributes:
+      label: "Owner study need and free-access benefit"
+      description: "What real study task is difficult today, and how does this help without payment or AI? Distinguish current capability from a proposed feature."
+    validations:
+      required: true
+  - type: textarea
+    id: passage-behavior
+    attributes:
+      label: "Representative passage and expected behavior"
+      description: "Give book/chapter/verse, language, current observation, expected result, and a small authentic fixture/source citation when data is involved. Separate observation from interpretation and uncertainty."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Acceptance and exact verification"
+      description: "List falsifiable acceptance criteria, focused checks, applicable current commands, and browser/mobile/RTL/navigation/error/offline evidence. Identify unavailable checks and their risks; do not assume planned tooling exists."
+    validations:
+      required: true
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: "Scope and non-goals"
+      description: "State what must remain unchanged. Ambiguous scholarly expectations or generated-data work require clarification and explicit approval before implementation."
+    validations:
+      required: true
+  - type: textarea
+    id: data-impact
+    attributes:
+      label: "Data, provenance, and interpretive impacts"
+      description: "State none or specify source/version/rights, Unicode/references, lemma/POS/morphology/Strong's changes, attribution, missing/ambiguous data, and scholarly questions. Corpus regeneration requires separate explicit approval."
+    validations:
+      required: true
+  - type: textarea
+    id: cost-impact
+    attributes:
+      label: "Cost and access changes"
+      description: "State none or identify measured/estimated download, storage, network, dependency, or operating costs and free-access impacts. No billing model or hosted AI is approved; estimates are not guarantees."
+    validations:
+      required: true

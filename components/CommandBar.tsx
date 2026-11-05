@@ -24,6 +24,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ onSearch }) => {
         </div>
         <input
           type="text"
+          aria-label="Bible reference"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Enter Bible reference (e.g. 'Gen 1:1' or 'John 1:1')"
@@ -35,6 +36,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ onSearch }) => {
           </kbd>
           <button 
             type="submit"
+            aria-label="Open passage"
+            title="Open passage"
             className="p-1.5 rounded-md bg-slate-800 hover:bg-sky-600 hover:text-white transition-all text-slate-400"
           >
             <ChevronRight size={16} />
