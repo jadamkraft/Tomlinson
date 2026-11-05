@@ -60,11 +60,58 @@ test.describe("production reader smoke", () => {
     const matthew = page.locator('[data-reference="Matt.1.1"]');
     await expect(matthew.locator("button")).toHaveCount(8);
     await matthew.getByRole("button", { name: "Select Δαυὶδ", exact: true }).click();
-    await expect(page.getByText("No verified dictionary linkage in this corpus.", { exact: true })).toBeVisible();
+    await expect(page.getByText(/^No exact Greek lexicon entry found for /)).toBeVisible();
     await reference.fill("John 1:1");
     await reference.press("Enter");
     await expect(page.getByRole("alert")).toContainText(/HTML|JSON|content.type/i);
     await expect(page.getByRole("button", { name: "Retry passage" })).toBeVisible();
     await expect(page.locator("h1")).toHaveText("Matt 1:1");
+  });
+
+  test("canonical Greek lemmas resolve to attributed lexicon entries", async ({ page }) => {
+    await page.goto("/#ref=Rom.8.9");
+    const verse = page.locator('[data-reference="Rom.8.9"]');
+    const lexicon = page.locator("main > section section").first();
+
+    await verse.getByRole("button", { name: "Select σαρκὶ", exact: true }).click();
+    await expect(page.getByText("Lemma: σάρξ", { exact: true })).toBeVisible();
+    await expect(lexicon).toContainText("σάρξ");
+    await expect(lexicon).toContainText("flesh (as stripped of the skin)");
+
+    await verse.getByRole("button", { name: "Select πνεύματι,", exact: true }).click();
+    await expect(page.getByText("Lemma: πνεῦμα", { exact: true })).toBeVisible();
+    await expect(lexicon).toContainText("πνεῦμα");
+    await expect(lexicon).toContainText("a current of air");
+
+    await verse.getByRole("button", { name: "Select Χριστοῦ", exact: true }).click();
+    await expect(page.getByText("Lemma: Χριστός", { exact: true })).toBeVisible();
+    await expect(lexicon).toContainText("Χριστός");
+    await expect(lexicon).toContainText("the Messiah");
+    await expect(lexicon).toContainText("James Strong (1890)");
+    await expect(lexicon).toContainText("Historical gloss, not a contextual interpretation.");
+    await expect(lexicon).toContainText("proofreading is incomplete");
+    await expect(page.getByText("#N/A", { exact: true })).toBeVisible();
+  });
+
+  test("Greek lexicon failures are distinct and retryable", async ({ page }) => {
+    let attempts = 0;
+    await page.route("**/assets/strongs_greek.xml", async (route) => {
+      attempts += 1;
+      if (attempts === 1) {
+        await route.fulfill({ status: 503, body: "Unavailable" });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/#ref=Rom.8.9");
+    await page.locator('[data-reference="Rom.8.9"]')
+      .getByRole("button", { name: "Select σαρκὶ", exact: true })
+      .click();
+    const lexicon = page.locator("main > section section").first();
+    await expect(lexicon.getByRole("alert")).toContainText("Unable to load the Greek lexicon.");
+    await lexicon.getByRole("button", { name: "Retry lexicon" }).click();
+    await expect(lexicon).toContainText("flesh (as stripped of the skin)");
+    expect(attempts).toBe(2);
   });
 });

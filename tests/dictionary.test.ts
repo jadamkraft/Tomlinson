@@ -4,6 +4,16 @@ import { DictionaryService } from '../services/DictionaryService';
 const syntheticGreekDictionary = `<strongsdictionary><entries>
   <entry strongs="00012"><greek unicode="TEST-G" translit="test-g"/>
     <strongs_def>Greek <latin>test definition</latin></strongs_def></entry>
+  <entry strongs="04561"><greek unicode="σάρξ" translit="sárx"/>
+    <strongs_def>Flesh definition</strongs_def></entry>
+  <entry strongs="04151"><greek unicode="πνεῦμα" translit="pneûma"/>
+    <strongs_def>Spirit definition</strongs_def></entry>
+  <entry strongs="05547"><greek unicode="Χριστός" translit="Christós"/>
+    <strongs_def>Anointed definition</strongs_def></entry>
+  <entry strongs="09001"><greek unicode="DUP" translit="dup"/>
+    <strongs_def>First duplicate</strongs_def></entry>
+  <entry strongs="09002"><greek unicode="DUP" translit="dup"/>
+    <strongs_def>Second duplicate</strongs_def></entry>
 </entries></strongsdictionary>`;
 const syntheticHebrewDictionary = `<osis xmlns="http://www.bibletechnologies.net/2003/OSIS/namespace">
   <osisText><div type="glossary"><div type="entry" n="00012">
@@ -64,5 +74,42 @@ describe('dictionary lookup with synthetic vocabulary in bundled entry formats',
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenCalledWith('/assets/strongs_greek.xml');
     expect(fetchMock).toHaveBeenCalledWith('/assets/strongs_hebrew.xml');
+  });
+
+  it('looks up Greek entries by exact NFC lemma without loading Hebrew', async () => {
+    await dictionary.initializeGreek();
+
+    expect(dictionary.getGreekDefinitionByLemma('σάρξ')).toEqual({
+      status: 'found',
+      entry: { word: 'σάρξ', def: 'Flesh definition' },
+    });
+    expect(dictionary.getGreekDefinitionByLemma('πνεῦμα')).toMatchObject({
+      status: 'found',
+      entry: { word: 'πνεῦμα', def: 'Spirit definition' },
+    });
+    expect(dictionary.getGreekDefinitionByLemma('Χριστός')).toMatchObject({
+      status: 'found',
+      entry: { word: 'Χριστός', def: 'Anointed definition' },
+    });
+    expect(dictionary.getGreekDefinitionByLemma('Σάρξ')).toEqual({ status: 'missing' });
+    expect(dictionary.getGreekDefinitionByLemma('ἄγνωστος')).toEqual({ status: 'missing' });
+    expect(dictionary.getGreekDefinitionByLemma('DUP')).toEqual({ status: 'ambiguous' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('/assets/strongs_greek.xml');
+  });
+
+  it('reports Greek lexicon request failures and allows retry', async () => {
+    fetchMock.mockImplementationOnce(async () => ({
+      ok: false,
+      status: 503,
+      text: async () => '',
+    }));
+
+    await expect(dictionary.initializeGreek()).rejects.toThrow(
+      'Greek lexicon request failed with HTTP 503.'
+    );
+    await dictionary.initializeGreek();
+    expect(dictionary.getGreekDefinitionByLemma('σάρξ').status).toBe('found');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -3,21 +3,27 @@ export interface DictionaryEntry {
   def: string;
 }
 
+export type GreekLemmaLookup =
+  | { status: "found"; entry: DictionaryEntry }
+  | { status: "missing" }
+  | { status: "ambiguous" };
+
 export class DictionaryService {
   private greekEntries: Map<string, DictionaryEntry> = new Map();
+  private greekLemmaEntries: Map<string, DictionaryEntry[]> = new Map();
   private hebrewEntries: Map<string, DictionaryEntry> = new Map();
   private initialized = false;
+  private greekInitialized = false;
+  private greekInitialization: Promise<void> | null = null;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
     try {
       await Promise.all([
-        this.loadDictionary(
-          "/assets/strongs_greek.xml",
-          this.greekEntries,
-          "G"
-        ),
+        this.initializeGreek().catch((error: unknown) => {
+          console.error("DictionaryService: Greek init failed", error);
+        }),
         this.loadDictionary(
           "/assets/strongs_hebrew.xml",
           this.hebrewEntries,
@@ -31,6 +37,66 @@ export class DictionaryService {
     } catch (error) {
       console.error("DictionaryService: Init failed", error);
     }
+  }
+
+  async initializeGreek(): Promise<void> {
+    if (this.greekInitialized) return;
+    if (!this.greekInitialization) {
+      this.greekInitialization = this.loadGreekDictionary()
+        .then(() => {
+          this.greekInitialized = true;
+        })
+        .catch((error: unknown) => {
+          this.greekInitialization = null;
+          throw error;
+        });
+    }
+    return this.greekInitialization;
+  }
+
+  private async loadGreekDictionary(): Promise<void> {
+    const path = "/assets/strongs_greek.xml";
+    const response = await fetch(path);
+    if (!response.ok) {
+      throw new Error(`Greek lexicon request failed with HTTP ${response.status}.`);
+    }
+
+    const xml = await response.text();
+    const doc = new DOMParser().parseFromString(xml, "text/xml");
+    if (
+      doc.getElementsByTagName("parsererror").length > 0 ||
+      doc.documentElement?.tagName !== "strongsdictionary"
+    ) {
+      throw new Error("Greek lexicon response is not a valid Strong's XML dictionary.");
+    }
+
+    const entriesByStrong = new Map<string, DictionaryEntry>();
+    const entriesByLemma = new Map<string, DictionaryEntry[]>();
+    const nodes = Array.from(doc.querySelectorAll("strongsdictionary > entries > entry"));
+    if (nodes.length === 0) {
+      throw new Error("Greek lexicon contains no entries.");
+    }
+
+    nodes.forEach((node) => {
+      const rawId = node.getAttribute("strongs");
+      const numericId = rawId?.match(/\d+/)?.[0];
+      const greek = node.querySelector("greek");
+      const word = greek?.getAttribute("unicode")?.trim() || "";
+      const def = node.querySelector("strongs_def")?.textContent?.trim() || "";
+      if (!numericId || !word || !def) return;
+
+      const entry = { word, def };
+      entriesByStrong.set(parseInt(numericId, 10).toString(), entry);
+
+      const key = word.normalize("NFC");
+      const matches = entriesByLemma.get(key) || [];
+      matches.push(entry);
+      entriesByLemma.set(key, matches);
+    });
+
+    this.greekEntries = entriesByStrong;
+    this.greekLemmaEntries = entriesByLemma;
+    console.log(`Dictionary: Loaded ${this.greekEntries.size} Greek entries`);
   }
 
   private async loadDictionary(
@@ -118,6 +184,16 @@ export class DictionaryService {
     } catch (e) {
       console.error(`DictionaryService: Error loading ${path}`, e);
     }
+  }
+
+  public getGreekDefinitionByLemma(lemma: string): GreekLemmaLookup {
+    if (!this.greekInitialized) {
+      throw new Error("Greek lexicon has not been initialized.");
+    }
+    const matches = this.greekLemmaEntries.get(lemma.normalize("NFC")) || [];
+    if (matches.length === 0) return { status: "missing" };
+    if (matches.length > 1) return { status: "ambiguous" };
+    return { status: "found", entry: matches[0] };
   }
 
   public getDefinition(strongsId: string): DictionaryEntry | null {

@@ -35,14 +35,51 @@ Node 23 is outside the test-tool support range.
 Canonical NT lemma/POS/normalized fields now survive generation and reading;
 Strong's linkage is intentionally absent. Active Greek imperative `D`, source
 POS and degree decoding are fixed on the Inspector path. These old NT defects
-are no longer future prerequisites. No verified lexical dictionary enrichment
-has been established. Annotation accuracy and contextual meaning remain distinct.
+are no longer future prerequisites. At first-sprint close, Greek NT lexicon lookup
+was not implemented. Annotation accuracy and contextual meaning remain distinct.
 
 Real iPhone/Android testing is unverified; browser emulation is not an actual
 phone. Research uses no hosted AI or backend. New manifest requests are network-only
 through the new worker policy and HTTP-revalidated; hashed shards are checked for
 SHA-256/schema/corpus identity. Old service-worker versions and offline diagnostics
 were not re-certified. No deployment or repository settings were changed.
+
+## Greek Lexicon Follow-up (2026-11-05)
+
+The canonical NT Inspector now looks up Greek tokens by exact NFC-normalized
+source `lexicalLemma` against the `unicode` headword in the existing
+`strongs_greek.xml`. This does not populate Strong's IDs, use accent-stripped or
+fuzzy matching, or infer contextual meaning. Missing and duplicate exact
+headwords remain explicit; failed requests can be retried. The UI displays the
+dictionary source attribution, its declared public-domain status and its own
+proofreading caveat.
+
+The bundled source identifies James Strong's 1890 work, Michael Grier's 1996
+e-text and Ulrik Petersen's 2006 XML edition, and declares "Public Domain -- Copy
+Freely." The e-text's accuracy has not been independently certified; entries are
+historical glosses, not contextual definitions. Hebrew dictionary provenance
+remains outside this follow-up.
+
+Current follow-up checks:
+
+- Runtime: Node 22.23.4 via `npm exec --yes --package=node@22 -- ...`;
+  system Node 23.11.0 is outside the documented test-tool support range.
+- `npm exec --yes --package=node@22 -- npm test`: passed, 167 tests across 8 files.
+- `npm exec --yes --package=node@22 -- npm run typecheck`: passed.
+- `npm run build`: passed; the Playwright web server also rebuilt the final app
+  for browser checks at `http://127.0.0.1:4175/`.
+- `npm exec --yes --package=node@22 -- npm run test:e2e`: passed, 35 checks
+  across Playwright 1.64.1 desktop Chromium, Pixel 7, 390x844 and 360x800
+  Chromium, and 390x844 mobile WebKit. New lookup and request-failure/retry
+  checks passed in all five browser projects.
+- `npm exec --yes --package=node@22 -- npm run test:e2e -- tests/e2e/reader.spec.ts --grep "canonical Greek lemmas|Greek lexicon failures"`:
+  final focused rerun passed, 10 checks across the same five browser projects.
+- `npm exec --yes --package=node@22 -- npm run check:guidance`: passed after
+  documentation updates.
+- `npm exec --yes --package=node@22 -- npm run check:data`: passed.
+- `git diff --check`: passed.
+- `npm run check:nt` was not rerun; this follow-up did not modify canonical NT
+  source, generated corpus assets, or their importer.
 
 ## Historical Foundation Evidence (2026-11-01)
 
@@ -84,11 +121,10 @@ corpus, conversion script, or morphology table was changed.
    token zero at the left of the first row, despite RTL markup. Reader combines
    `dir="rtl"` with `flex-row-reverse`; attribute checks alone do not verify readable
    order. A source-order/layout regression test should precede a focused repair.
-3. **No verified lexical dictionary enrichment.** The historical Matt 1:1 selected
-   word has a blank lexicon panel. Dictionary format extraction/availability needs
-   investigation; synthetic dictionary tests are not full real-corpus tests. The
-   new NT path provides actual lemma/POS and an explicit missing-definition state,
-   not a fabricated Strong's lookup or a certified dictionary repair.
+3. **Historical Greek lexicon limitations.** Exact NFC headword lookup is now
+   implemented from the bundled Strong's XML. The source text is not independently
+   proofread or certified; unmatched and ambiguous lemmas remain unresolved.
+   Hebrew lexicon provenance and rights remain separate open questions.
 4. **Source and Hebrew limitations remain.** Partial Hebrew tables/display,
    annotation uncertainty and edition coverage remain in
    [data contracts](DATA_SOURCES.md). The old NT field loss and active Greek

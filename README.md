@@ -50,8 +50,9 @@ See [project principles](docs/PROJECT_PRINCIPLES.md) and the
 	OT reading retains XML. No NT XML fallback silently changes the source.
 - **Word Inspection:** Select Greek or Hebrew words for supplied linguistic
 	information. NT retains actual lexical lemma, source POS, surface and
-	normalized forms; Strong's linkage is intentionally absent. No verified
-	lexical dictionary enrichment is claimed; Hebrew limitations remain.
+	normalized forms; Strong's linkage is intentionally absent. The Inspector
+	uses exact NFC Greek lemma matches against the attributed historical lexicon;
+	missing/ambiguous entries remain explicit, and Hebrew limitations remain.
 - **Word Research:** Lemma/form concordance, optional companion-lemma proximity,
 	explicit book/comparison scopes, 25-hit pages, and full-chapter result
 	opening with in-session return state. Mobile/desktop browser checks cover the

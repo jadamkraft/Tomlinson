@@ -59,8 +59,8 @@ Keep data corrections separate unless explicitly approved.
 Use Node 22 LTS (22.12+). Baseline commands: `npm ci`, `npx tsc --noEmit`,
 `npm run build`, `npm run dev`, `npm run preview`. Consult `package.json` for added
 checks and run the applicable ones. A Vite build is not a typecheck. Consult
-[validation status](../docs/VALIDATION_STATUS.md): sprint unit evidence is
-provisional until final reruns/browser acceptance. Hebrew display issues and no
+[validation status](../docs/VALIDATION_STATUS.md) for recorded results and unverified
+requirements; prior passes are not a current baseline. Hebrew display issues and no
 verified lexical dictionary remain; do not relabel fixed NT preservation/Greek
 decoding issues as future blockers. Mock feedback/network side effects in tests.
 

@@ -30,7 +30,9 @@ canonical NT research sprint is authorized; final browser acceptance is pending.
   Separate linguistic observation, gloss, and interpretation; contextual meaning
   is not certified by a dictionary or an owner's theological conclusion.
 - Preserve source surface/normalized/lemma/POS distinctions (`σαρκὶ`/`σαρκί`/`σάρξ`).
-  NT Strong's linkage is absent intentionally; show missing definitions honestly.
+  NT Strong's linkage is absent intentionally. The Inspector matches exact NFC
+  canonical Greek lemmas to bundled Strong's Greek XML headwords; show missing,
+  ambiguous, and load-error states honestly. Keep source attribution visible.
   Keep exact NFC-only form/lemma modes, companion direction/distance 1-10/default
   5, chapter boundary across verses, complete-scope counts, and 25-hit paging.
   Counts and editorial author presets are not semantic or authorship verdicts.

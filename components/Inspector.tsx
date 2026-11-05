@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { VerseWord, ParsedVerse } from "../types";
-import { dictionary } from "../services/DictionaryService";
+import { dictionary, GreekLemmaLookup } from "../services/DictionaryService";
 import { parseMorphology } from "../utils/morphologyParser";
 import { BookOpen, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
@@ -21,6 +21,46 @@ const Inspector: React.FC<InspectorProps> = ({
   canGoPrev = true,
   onResearch,
 }) => {
+  const [greekLookup, setGreekLookup] = useState<{
+    lemma: string;
+    status: "loading" | "ready" | "error";
+    result?: GreekLemmaLookup;
+  } | null>(null);
+  const [greekLookupAttempt, setGreekLookupAttempt] = useState(0);
+  const canonicalGreekLemma =
+    selectedWord?.language === "grc" && selectedWord.corpusId
+      ? selectedWord.lexicalLemma
+      : undefined;
+
+  useEffect(() => {
+    if (!canonicalGreekLemma) {
+      setGreekLookup(null);
+      return;
+    }
+
+    let active = true;
+    setGreekLookup({ lemma: canonicalGreekLemma, status: "loading" });
+    dictionary
+      .initializeGreek()
+      .then(() => {
+        if (active) {
+          setGreekLookup({
+            lemma: canonicalGreekLemma,
+            status: "ready",
+            result: dictionary.getGreekDefinitionByLemma(canonicalGreekLemma),
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Inspector: Unable to load the Greek lexicon", error);
+        if (active) setGreekLookup({ lemma: canonicalGreekLemma, status: "error" });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [canonicalGreekLemma, selectedWord?.id, greekLookupAttempt]);
+
   if (!currentVerse) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 text-slate-500 italic">
@@ -91,7 +131,13 @@ const Inspector: React.FC<InspectorProps> = ({
   }
 
   const morphLabels = parseMorphology(selectedWord.morph);
-  const lexEntry = dictionary.getDefinition(selectedWord.strongs);
+  const lexEntry = canonicalGreekLemma
+    ? greekLookup?.lemma === canonicalGreekLemma &&
+      greekLookup.status === "ready" &&
+      greekLookup.result?.status === "found"
+      ? greekLookup.result.entry
+      : null
+    : dictionary.getDefinition(selectedWord.strongs);
   const posNames: Record<string, string> = { "N-": "Noun", "V-": "Verb", "A-": "Adjective", "P-": "Preposition", "C-": "Conjunction", "D-": "Adverb", "I-": "Interjection", "X-": "Particle", RA: "Definite article", RD: "Demonstrative pronoun", RI: "Interrogative/indefinite pronoun", RP: "Personal pronoun", RR: "Relative pronoun" };
 
   return (
@@ -122,7 +168,35 @@ const Inspector: React.FC<InspectorProps> = ({
             </label>
           </div>
           <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 shadow-inner">
-            {lexEntry?.word && lexEntry.def ? (
+            {canonicalGreekLemma &&
+            (greekLookup?.lemma !== canonicalGreekLemma ||
+              greekLookup.status === "loading") ? (
+              <p role="status" className="text-slate-500 text-sm italic">
+                Loading Greek lexicon…
+              </p>
+            ) : canonicalGreekLemma && greekLookup?.status === "error" ? (
+              <div role="alert" className="text-sm text-rose-300">
+                <p>Unable to load the Greek lexicon.</p>
+                <button
+                  className="mt-2 min-h-11 underline"
+                  onClick={() => setGreekLookupAttempt(attempt => attempt + 1)}
+                >
+                  Retry lexicon
+                </button>
+              </div>
+            ) : canonicalGreekLemma &&
+              greekLookup?.lemma === canonicalGreekLemma &&
+              greekLookup.result?.status === "missing" ? (
+              <p className="text-slate-500 text-sm italic">
+                No exact Greek lexicon entry found for {canonicalGreekLemma}.
+              </p>
+            ) : canonicalGreekLemma &&
+              greekLookup?.lemma === canonicalGreekLemma &&
+              greekLookup.result?.status === "ambiguous" ? (
+              <p className="text-slate-500 text-sm italic">
+                Multiple exact Greek lexicon entries found for {canonicalGreekLemma}; no entry selected.
+              </p>
+            ) : lexEntry?.word && lexEntry.def ? (
               <>
                 <p
                   className={`text-xl serif-font text-sky-300 font-bold mb-2 ${
@@ -136,6 +210,22 @@ const Inspector: React.FC<InspectorProps> = ({
                 <p className="text-slate-300 text-sm leading-relaxed serif-font italic">
                   {lexEntry.def}
                 </p>
+                {canonicalGreekLemma && (
+                  <p className="mt-3 border-t border-slate-800 pt-2 text-[10px] leading-relaxed text-slate-500">
+                    <a
+                      href="/assets/strongs_greek.xml"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      Source and provenance
+                    </a>
+                    : James Strong (1890); e-text by Michael Grier (1996); XML edition by
+                    Ulrik Petersen (2006). Source declares “Public Domain -- Copy Freely.”
+                    The source warns that proofreading is incomplete. Historical gloss,
+                    not a contextual interpretation.
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-slate-500 text-sm italic">

@@ -48,8 +48,10 @@ Historical `.cursor/plans/` are context, not authorization.
   once, 25/page. Complete scope counts are source observations, not sense claims.
 - Author-group presets are explicit editorial memberships; their Wikipedia
   citation is introductory, not definitive scholarship. Do not assign Hebrews
-  to Paul or equate Other NT with one author. No verified NT dictionary enrichment
-  exists; do not synthesize Strong's links to fill a missing-data state.
+  to Paul or equate Other NT with one author. Inspector dictionary lookup uses
+  exact NFC canonical Greek lemma to bundled Strong's XML headword matches; this
+  does not add Strong's linkage or certify lexical accuracy/contextual meaning.
+  Preserve missing, ambiguous, and unavailable states; never use fuzzy matches.
 - No full corpus regeneration, bulk corpus patching, or conversion-script execution
   without explicit data-change approval, a selected canonical generator, and
   separately reviewed output differences. Free-to-read is not redistribution permission.

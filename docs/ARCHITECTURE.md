@@ -16,7 +16,7 @@ The root alias `@/` resolves to the repository root. TypeScript is not strict.
 | Canonical NT | `services/NtCorpusService.ts` lazily loads the manifest and content-hash book JSON, coalesces requests, verifies SHA-256/schema/source/corpus identity, and indexes references/chapters. No NT XML fallback. |
 | Research computation | `services/WordContextIndex.ts` owns pure lemma/form postings and bounded proximity queries. `workers/ntResearch.worker.ts` loads selected books lazily; `services/WordContextService.ts` bridges worker requests. |
 | Research state and controls | `hooks/useWordResearch.ts` owns query, target, paging, loading/error/retry and stale-response suppression; rejects results from another corpus. `components/WordResearchPanel.tsx` owns controls and results. |
-| Dictionary | `services/DictionaryService.ts`: initializes Greek/Hebrew XML dictionaries and normalizes numeric Strong's keys in `getDefinition`. |
+| Dictionary | `services/DictionaryService.ts`: loads the Greek Strong's XML and supports exact NFC headword lookup by canonical NT lemma, alongside legacy Strong's-ID lookup and Hebrew XML lookup. |
 | Displayed morphology | `utils/morphologyParser.ts`: `parseMorphology` is called by `components/Inspector.tsx`. `services/MorphDecoder.ts` is an alternate decoder, not this display path. |
 | Cross-book movement | `hooks/useBibleNavigation.ts` sits above engine-local adjacency and uses book order/chapter metadata. |
 | Text and inspection | `components/Reader.tsx` renders selectable tokens; `Inspector.tsx` displays lexical and morphological information. |
@@ -46,10 +46,13 @@ flat/milestone layouts have separate retrieval strategies; test both before
 changing the parser. Unknown aliases can throw; retained OT XML load errors can
 leave retrieval null. Do not generalize that legacy behavior to NT load failures.
 
-Dictionary loading can also degrade without propagating failure. An app READY
-status is not proof that every dictionary/book request succeeded. Reference
-parsing has permissive fallbacks; navigation sometimes uses metadata for unloaded
-books. Existing behavior is a baseline to test, not automatically correct.
+The canonical NT Inspector loads the Greek dictionary on selection and displays
+load failures, missing exact lemmas, and ambiguous headwords separately; retry
+is available after a failed request. The legacy `initialize()` path for other
+dictionary consumers still catches initialization errors. An app READY status is
+not proof that every dictionary/book request succeeded. Reference parsing has
+permissive fallbacks; navigation sometimes uses metadata for unloaded books.
+Existing behavior is a baseline to test, not automatically correct.
 
 The old Greek XML converters are not the canonical NT path or routine validation.
 `build:nt` generates the approved JSON corpus; `check:nt` runs the generator with

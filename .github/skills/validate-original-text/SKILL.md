@@ -37,8 +37,10 @@ in the current display. Read [data contracts](../../../docs/DATA_SOURCES.md),
    across the trace. Canonical NT retains lexical lemma/POS and normalized word;
    legacy `lemma`/`strongs` fields are intentionally empty. Only old Greek XML
    overloads `lemma` with IDs; fuzzy IDs/normalized forms cannot replace lexical
-   identity. No verified NT dictionary enrichment is claimed. Record missing
-   links, collisions, and uncertainty; never fabricate linkage.
+   identity. The Inspector supports exact NFC lookup from canonical Greek lemma
+   to the bundled historical Strong's XML headword; this does not add Strong's
+   links or certify lexical accuracy. Record missing links, ambiguous headwords,
+   and uncertainty; never fabricate linkage.
 5. The developer consults `package.json` and
    [CONTRIBUTING](../../../CONTRIBUTING.md) for available read-only data checks and
    focused tests. Use structured XML parsing and mocked fetches. After an approved

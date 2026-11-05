@@ -43,8 +43,10 @@ Record pass/fail/blocked/not applicable, evidence, and reason for each relevant 
   John 7:53-8:11. No latest SBLGNT/all-manuscripts claim or app-code license implied.
 - [ ] Rom 8:9 selection distinguishes `σαρκὶ` surface, `σαρκί` normalized,
   `σάρξ` lemma, `N-` and `----DSF-`. Active Greek imperative `D`, source POS and
-  degree are preserved. Missing definitions/Strong's links stay honest; no verified
-  lexical dictionary enrichment or Hebrew table/display repair is assumed.
+  degree are preserved. Exact NFC lemma lookup displays bundled Greek lexicon
+  headwords with attribution; verify found, missing, ambiguous, failed-load and
+  retry states. Strong's linkage remains absent; the historical gloss is not a
+  contextual interpretation. Hebrew table/display repair is not assumed.
 - [ ] Lemma/form keys use NFC only; form uses unpunctuated `word`, case/accent
   sensitive. Verify canonical-equivalent Unicode and surface/normalized distinction.
 - [ ] Companion `ἐν` with `σάρξ`/`πνεῦμα` in Rom 8:9 and `Χριστός` in Rom 8:1:
